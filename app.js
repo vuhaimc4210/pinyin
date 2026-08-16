@@ -90,11 +90,16 @@ function buildDoubleQuestion(item, allDoubles) {
   };
 }
 
+const QUESTIONS_PER_SESSION = 15;
+
+// Kho câu hỏi vẫn giữ đủ cả 2 dạng (phụ âm đầu + thanh điệu) cho 100 từ đã có
+// audio. Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên 15 câu trong kho đó.
 function buildAllQuestions() {
   const initialQs = availableSingles.map(buildSingleQuestion);
   const toneQs = availableSingles.map(buildToneQuestion);
   const doubleQs = availableDoubles.map(item => buildDoubleQuestion(item, DOUBLES));
-  return shuffle([...initialQs, ...toneQs, ...doubleQs]);
+  const pool = shuffle([...initialQs, ...toneQs, ...doubleQs]);
+  return pool.slice(0, QUESTIONS_PER_SESSION);
 }
 
 // ===== Trạng thái =====
@@ -167,7 +172,8 @@ async function loadAvailableItems() {
   if (total === 0) {
     startBtn.textContent = 'Chưa có file audio nào';
   } else {
-    startBtn.textContent = `Bắt đầu làm bài (${total} câu)`;
+    const sessionSize = Math.min(total, QUESTIONS_PER_SESSION);
+    startBtn.textContent = `Bắt đầu làm bài (${sessionSize} câu)`;
     startBtn.disabled = false;
   }
 }
