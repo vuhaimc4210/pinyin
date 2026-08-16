@@ -1,0 +1,6 @@
+.env
+node_modules/
+tools/internal-web.config.js
+tools/internal-web.config.json
+.venv/
+.claude/settings.local.json

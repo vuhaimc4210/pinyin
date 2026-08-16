@@ -1,0 +1,13 @@
+{
+  "name": "web-tq",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Luyện nghe Pinyin — web app tĩnh + tool lấy audio",
+  "scripts": {
+    "fetch-audio": "node tools/fetch-audio.js",
+    "test-internal-web": "node tools/test-internal-web.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}

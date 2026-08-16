@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luyện nghe Pinyin: b p m f · d t n l · g k h</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <h1>Luyện nghe Pinyin</h1>
+  <p class="subtitle">Thanh mẫu b p m f · d t n l · g k h — Vận mẫu a o e i u ü, ai ei ao ou — 100 câu</p>
+
+  <div class="card">
+    <div class="controls-row">
+      <label for="speedRange">Tốc độ đọc</label>
+      <div class="speed-line">
+        <input type="range" id="speedRange" min="0.5" max="1.5" step="0.05" value="1">
+        <span id="speedLabel">1.00x</span>
+      </div>
+    </div>
+    <p class="note">
+      Bài học chỉ dùng những từ đã có file phát âm chuẩn thu sẵn (thư mục <code>audio/</code>). Số câu sẽ
+      tăng dần khi có thêm file mới được tải về.
+    </p>
+  </div>
+
+  <div id="startScreen" class="card">
+    <button id="startBtn" class="btn-primary" disabled>Đang kiểm tra dữ liệu audio...</button>
+  </div>
+
+  <div id="quizScreen" class="card hidden">
+    <div class="score-live" id="scoreLive">Điểm: 0</div>
+    <div class="progress-wrap">
+      <span id="progressText">Câu 1 / 100</span>
+    </div>
+    <div class="progress-track"><div id="progressBar"></div></div>
+
+    <div class="hanzi-display">
+      <span class="hint-mark">?</span>
+      <span id="hanziChar" class="hanzi-char"></span>
+    </div>
+    <div id="pinyinHint" class="pinyin-hint"></div>
+
+    <button id="playBtn" class="btn-play">🔊 Nghe từ</button>
+
+    <div id="optionsContainer" class="options-grid"></div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <button id="nextBtn" class="hidden">Câu tiếp theo →</button>
+  </div>
+
+  <div id="resultScreen" class="card hidden">
+    <h2 style="text-align:center;">Kết quả</h2>
+    <div id="resultScore"></div>
+    <div id="resultBreakdown"></div>
+    <button id="restartBtn" class="btn-primary" style="margin-top:16px;">Làm lại</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

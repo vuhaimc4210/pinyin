@@ -1,0 +1,34 @@
+{
+  "_comment": "Copy file này thành internal-web.config.json rồi điền đúng theo trang web nội bộ của bạn. Lấy CSS selector bằng DevTools (F12 -> chọn phần tử -> chuột phải -> Copy -> Copy selector).",
+
+  "baseUrl": "http://192.168.1.100:8080/tts",
+
+  "_comment_voiceName": "Để null nếu không cần đổi giọng (dùng giọng mặc định của trang). Nếu điền, script sẽ chọn giọng này 1 lần trước khi xử lý danh sách từ.",
+  "voiceName": null,
+
+  "selectors": {
+    "textInput": "#textInput",
+    "generateButton": "#generateBtn",
+
+    "_comment_voiceDialog": "Để null nếu không cần đổi giọng. Nếu trang có hộp thoại chọn giọng, điền 3 selector: nút mở hộp thoại, ô tìm theo tên, nút Select trên dòng kết quả (sẽ tự được ghép với li[data-value=\"<voiceName>\"] để bấm đúng dòng).",
+    "openVoiceDialog": null,
+    "voiceSearchInput": null,
+    "voiceSelectButton": null,
+
+    "_comment_downloadButton": "Để null nếu bấm generateButton là tự tải file luôn. Nếu phải bấm thêm 1 nút tải riêng thì điền selector của nút đó.",
+    "downloadButton": null,
+
+    "_comment_waitForSelectorBeforeDownload": "Để null nếu không cần chờ. Nếu trang cần thời gian xử lý trước khi nút tải xuất hiện, điền selector sẽ đợi trước khi bấm downloadButton.",
+    "waitForSelectorBeforeDownload": null,
+
+    "_comment_resultArea": "Để null nếu không cần. Nếu trang thêm kết quả mới vào 1 khu vực danh sách (kết quả mới nhất là phần tử con đầu tiên, có thuộc tính id), điền selector của khu vực đó — script sẽ tự lấy id của kết quả đầu tiên rồi bấm link tải (thẻ a) có href chứa \"prj=<id>\" đó.",
+    "resultArea": null
+  },
+
+  "_comment_delayAfterFillMs": "Thời gian nghỉ (ms) SAU KHI đã nhập chữ vào ô textInput, TRƯỚC KHI bấm generateButton. Dùng để mô phỏng người dùng thật gõ xong rồi mới bấm, hoặc để đợi trang xử lý validate trước khi cho bấm nút.",
+  "delayAfterFillMs": 1000,
+
+  "delayMs": 10000,
+  "headless": false,
+  "downloadTimeoutMs": 30000
+}
