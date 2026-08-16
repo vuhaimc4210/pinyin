@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xem lại kết quả học sinh</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <h1>Xem lại kết quả học sinh</h1>
+  <p class="subtitle">Dành cho giáo viên — xem điểm và chi tiết từng câu trả lời của học sinh.</p>
+
+  <div class="card">
+    <div class="controls-row">
+      <label for="teacherPassword">Mật khẩu giáo viên</label>
+      <input type="password" id="teacherPassword" class="text-input" placeholder="Nhập mật khẩu">
+    </div>
+    <button id="loadBtn" class="btn-primary">Xem kết quả</button>
+    <p id="loadStatus" class="note"></p>
+  </div>
+
+  <div class="card">
+    <div id="submissionList" class="word-list"></div>
+  </div>
+
+  <div id="detailPanel" class="card hidden">
+    <button id="closeDetailBtn" class="btn-secondary">← Đóng chi tiết</button>
+    <h2 id="detailTitle" class="section-title"></h2>
+    <div id="detailList" class="word-list"></div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="teacher-review.js"></script>
+</body>
+</html>

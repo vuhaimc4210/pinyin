@@ -57,6 +57,19 @@ h1 {
   gap: 12px;
 }
 
+.text-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d8d3e0;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.text-input.input-error {
+  border-color: #ff3b30;
+  outline: 2px solid #ffd6d6;
+}
+
 #speedRange { flex: 1; }
 
 #speedLabel {
@@ -94,6 +107,13 @@ button:active { transform: scale(0.97); }
 .btn-primary:disabled {
   background: #cabdf0;
   cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #efe9fb;
+  color: #7b3fe4;
+  white-space: nowrap;
+  margin-bottom: 12px;
 }
 
 .btn-play {
@@ -249,6 +269,7 @@ button:active { transform: scale(0.97); }
 .word-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -295,4 +316,9 @@ button:active { transform: scale(0.97); }
 .badge-missing {
   background: #ffe3e3;
   color: #c62828;
+}
+
+.badge-correct {
+  background: #d3f9d8;
+  color: #1f8a3b;
 }

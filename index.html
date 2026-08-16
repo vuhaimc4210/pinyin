@@ -9,7 +9,7 @@
 <body>
 <div class="app">
   <h1>Luyện nghe Pinyin</h1>
-  <p class="subtitle">Thanh mẫu b p m f · d t n l · g k h — Vận mẫu a o e i u ü, ai ei ao ou — 100 câu</p>
+  <p class="subtitle">Thanh mẫu b p m f · d t n l · g k h — Vận mẫu a o e i u ü, ai ei ao ou — 30 từ</p>
 
   <div class="card">
     <div class="controls-row">
@@ -27,6 +27,10 @@
   </div>
 
   <div id="startScreen" class="card">
+    <div class="controls-row">
+      <label for="studentName">Tên học sinh</label>
+      <input type="text" id="studentName" class="text-input" placeholder="Nhập tên của bạn" autocomplete="name">
+    </div>
     <button id="startBtn" class="btn-primary" disabled>Đang kiểm tra dữ liệu audio...</button>
   </div>
 
@@ -60,6 +64,7 @@
   </div>
 </div>
 
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>

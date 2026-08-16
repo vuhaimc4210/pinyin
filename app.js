@@ -33,16 +33,34 @@ function shuffle(arr) {
   return a;
 }
 
+// Tách 1 chuỗi pinyin có dấu (vd "bǎo") thành initial/final/tone, dựa theo
+// nhóm thanh mẫu của từ. data.js hiện chỉ lưu sẵn `pinyin` dạng chuỗi (không
+// tách sẵn initial/final/tone như trước), nên cần tách ngược lại ở đây.
+// Quy ước giống buildPinyin/toneFinal: dấu thanh luôn nằm ở KÝ TỰ ĐẦU của
+// phần vận mẫu.
+function parsePinyin(pinyin, group) {
+  const initial = GROUP_INITIALS[group].find(i => pinyin.startsWith(i)) || '';
+  const rest = pinyin.slice(initial.length);
+  const firstChar = rest[0];
+  for (const base of Object.keys(TONE_MARKS)) {
+    const tone = TONE_MARKS[base].indexOf(firstChar);
+    if (tone !== -1) {
+      return { initial, final: base + rest.slice(1), tone };
+    }
+  }
+  return { initial, final: rest, tone: 0 };
+}
+
 // Câu hỏi nhận diện PHỤ ÂM ĐẦU: vận mẫu + thanh điệu đã biết (hiện làm gợi ý),
 // 4 đáp án chỉ khác nhau ở phụ âm đầu.
 function buildSingleQuestion(item) {
+  const { initial, final, tone } = parsePinyin(item.pinyin, item.group);
   const initials = GROUP_INITIALS[item.group];
-  const correct = buildPinyin(item.initial, item.final, item.tone);
-  let options = initials.map(i => buildPinyin(i, item.final, item.tone));
+  let options = initials.map(i => buildPinyin(i, final, tone));
   if (initials.length < 4) {
     let otherTone;
-    do { otherTone = 1 + Math.floor(Math.random() * 4); } while (otherTone === item.tone);
-    let extra = buildPinyin(item.initial, item.final, otherTone);
+    do { otherTone = 1 + Math.floor(Math.random() * 4); } while (otherTone === tone);
+    const extra = buildPinyin(initial, final, otherTone);
     if (!options.includes(extra)) options.push(extra);
   }
   return {
@@ -51,8 +69,8 @@ function buildSingleQuestion(item) {
     hanzi: item.hanzi,
     group: item.group,
     hintType: 'initial',
-    hintKnown: toneFinal(item.final, item.tone), // vd: "āo" — phần đã biết, phụ âm đầu bị ẩn
-    correct,
+    hintKnown: toneFinal(final, tone), // vd: "āo" — phần đã biết, phụ âm đầu bị ẩn
+    correct: item.pinyin,
     options: shuffle(options),
   };
 }
@@ -60,16 +78,16 @@ function buildSingleQuestion(item) {
 // Câu hỏi nhận diện THANH ĐIỆU: phụ âm đầu + vận mẫu đã biết (hiện làm gợi ý),
 // 4 đáp án cùng phụ âm đầu + vận mẫu, chỉ khác dấu thanh (1/2/3/4).
 function buildToneQuestion(item) {
-  const correct = buildPinyin(item.initial, item.final, item.tone);
-  const options = [1, 2, 3, 4].map(tone => buildPinyin(item.initial, item.final, tone));
+  const { initial, final } = parsePinyin(item.pinyin, item.group);
+  const options = [1, 2, 3, 4].map(tone => buildPinyin(initial, final, tone));
   return {
     id: item.id,
     type: 'tone',
     hanzi: item.hanzi,
     group: item.group,
     hintType: 'tone',
-    hintKnown: item.initial + item.final, // vd: "li" — phần đã biết, dấu thanh bị ẩn
-    correct,
+    hintKnown: initial + final, // vd: "li" — phần đã biết, dấu thanh bị ẩn
+    correct: item.pinyin,
     options: shuffle(options),
   };
 }
@@ -90,10 +108,11 @@ function buildDoubleQuestion(item, allDoubles) {
   };
 }
 
-const QUESTIONS_PER_SESSION = 15;
+const QUESTIONS_PER_SESSION = 30;
 
-// Kho câu hỏi vẫn giữ đủ cả 2 dạng (phụ âm đầu + thanh điệu) cho 100 từ đã có
-// audio. Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên 15 câu trong kho đó.
+// Kho câu hỏi giữ đủ cả 2 dạng (phụ âm đầu + thanh điệu) cho các từ đã có
+// audio (availableSingles). Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên
+// QUESTIONS_PER_SESSION câu trong kho đó.
 function buildAllQuestions() {
   const initialQs = availableSingles.map(buildSingleQuestion);
   const toneQs = availableSingles.map(buildToneQuestion);
@@ -110,11 +129,14 @@ let answered = false;
 let groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
 let availableSingles = [];
 let availableDoubles = [];
+let currentStudentName = '';
+let answerLog = [];
 
 // ===== DOM =====
 const startScreen = document.getElementById('startScreen');
 const quizScreen = document.getElementById('quizScreen');
 const resultScreen = document.getElementById('resultScreen');
+const studentNameInput = document.getElementById('studentName');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const speedRange = document.getElementById('speedRange');
@@ -179,6 +201,185 @@ async function loadAvailableItems() {
 }
 loadAvailableItems();
 
+// ===== Tên học sinh =====
+function initStudentName() {
+  const saved = localStorage.getItem('pinyinquiz_name');
+  if (saved) studentNameInput.value = saved;
+}
+initStudentName();
+
+studentNameInput.addEventListener('input', () => {
+  studentNameInput.classList.remove('input-error');
+});
+
+// ===== Nơi lưu kết quả =====
+// Trang này không có bước build nên không đọc được file .env thật — dùng hằng
+// số này làm "biến môi trường", đổi giá trị rồi deploy lại khi cần chuyển luồng.
+//   'off'   = tắt hẳn việc lưu kết quả (không tải file, không gửi đi đâu cả) —
+//             dùng khi đang test phần làm bài, chưa muốn đụng tới lưu trữ.
+//   'excel' = tải file Excel (.xlsx) về máy ngay khi làm xong bài, không cần
+//             cấu hình gì thêm, dùng được ngay.
+//   'sheet' = gửi lên Google Sheet qua Apps Script Web App (cần điền
+//             SCORE_WEBHOOK_URL bên dưới sau khi deploy Apps Script).
+const SAVE_MODE = 'off'; // 'off' | 'excel' | 'sheet'
+
+// Dán URL sau khi deploy Apps Script (chỉ cần khi SAVE_MODE = 'sheet').
+const SCORE_WEBHOOK_URL = null; // vd: 'https://script.google.com/macros/s/AKfycb.../exec'
+
+const XLSX_HEADERS = [
+  'Thời gian', 'Tên học sinh', 'Điểm', 'Tổng số câu', 'Phần trăm',
+  'Chi tiết theo nhóm (JSON)', 'Chi tiết bài làm (JSON)',
+];
+
+function payloadToRow(payload) {
+  return [
+    payload.timestamp,
+    payload.studentName,
+    payload.score,
+    payload.total,
+    payload.percent,
+    JSON.stringify(payload.groupStats),
+    JSON.stringify(payload.answers),
+  ];
+}
+
+// Tải kết quả 1 lượt làm bài về máy dưới dạng file Excel thật (.xlsx, dùng
+// thư viện SheetJS) — tránh lỗi font/encoding tiếng Việt hay gặp với file CSV.
+// Dùng làm phương án dự phòng khi không ghi trực tiếp được vào file có sẵn
+// (xem saveResultToExcel bên dưới).
+function downloadResultAsXlsx(payload) {
+  const ws = XLSX.utils.aoa_to_sheet([XLSX_HEADERS, payloadToRow(payload)]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ket qua');
+
+  const safeName = (payload.studentName || 'hoc-sinh').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-');
+  const safeTime = payload.timestamp.slice(0, 19).replace(/[:T]/g, '-');
+  XLSX.writeFile(wb, `ket-qua-${safeName}-${safeTime}.xlsx`);
+}
+
+// ===== Ghi trực tiếp vào 1 file .xlsx có sẵn (File System Access API) =====
+// Chỉ Chrome/Edge hỗ trợ. Phù hợp khi nhiều học sinh dùng CHUNG 1 máy/trình
+// duyệt (vd máy tính lớp học) — chọn file 1 lần, các lần nộp bài sau tự động
+// ghi nối thêm dòng vào đúng file đó. Nếu mỗi học sinh dùng thiết bị riêng,
+// cách này KHÔNG gộp được dữ liệu giữa các máy — cần chuyển sang SAVE_MODE =
+// 'sheet' (Google Sheet) để có 1 nơi lưu tập trung thật sự.
+const IDB_NAME = 'pinyinquiz-fs';
+const IDB_STORE = 'handles';
+const RESULTS_FILE_HANDLE_KEY = 'resultsFileHandle';
+let resultsFileHandleCache = null;
+
+function supportsFileSystemAccess() {
+  return typeof window.showOpenFilePicker === 'function';
+}
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Lấy handle của file kết quả: dùng lại handle đã chọn từ lần trước (lưu
+// trong IndexedDB) nếu còn quyền ghi; nếu chưa có, yêu cầu người dùng chọn
+// file ket-qua-hoc-sinh.xlsx (chỉ hỏi 1 lần cho mỗi trình duyệt/máy).
+async function getResultsFileHandle() {
+  if (resultsFileHandleCache) return resultsFileHandleCache;
+
+  const saved = await idbGet(RESULTS_FILE_HANDLE_KEY);
+  if (saved) {
+    let perm = await saved.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') perm = await saved.requestPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      resultsFileHandleCache = saved;
+      return saved;
+    }
+  }
+
+  const [handle] = await window.showOpenFilePicker({
+    types: [{
+      description: 'Excel',
+      accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+    }],
+  });
+  const perm = await handle.requestPermission({ mode: 'readwrite' });
+  if (perm !== 'granted') throw new Error('Không được cấp quyền ghi file.');
+
+  await idbSet(RESULTS_FILE_HANDLE_KEY, handle);
+  resultsFileHandleCache = handle;
+  return handle;
+}
+
+async function appendResultToXlsxFile(handle, payload) {
+  const file = await handle.getFile();
+  const buffer = await file.arrayBuffer();
+
+  let rows;
+  if (buffer.byteLength > 0) {
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+    if (rows.length === 0) rows = [XLSX_HEADERS];
+  } else {
+    rows = [XLSX_HEADERS];
+  }
+  rows.push(payloadToRow(payload));
+
+  const newSheet = XLSX.utils.aoa_to_sheet(rows);
+  const newWorkbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(newWorkbook, newSheet, 'Ket qua');
+  const outBuffer = XLSX.write(newWorkbook, { type: 'array', bookType: 'xlsx' });
+
+  const writable = await handle.createWritable();
+  await writable.write(outBuffer);
+  await writable.close();
+}
+
+async function saveResultToExcel(payload) {
+  if (supportsFileSystemAccess()) {
+    try {
+      const handle = await getResultsFileHandle();
+      await appendResultToXlsxFile(handle, payload);
+      console.log('Đã ghi kết quả vào file Excel đã chọn.');
+      return;
+    } catch (err) {
+      console.error('Không ghi được vào file Excel có sẵn, tải file mới thay thế:', err);
+    }
+  }
+  downloadResultAsXlsx(payload);
+}
+
+function sendScoreToSheet(payload) {
+  if (!SCORE_WEBHOOK_URL) return;
+  fetch(SCORE_WEBHOOK_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  }).catch((err) => console.error('Không gửi được điểm lên Google Sheet:', err));
+}
+
 // ===== Tốc độ =====
 function initSpeed() {
   const saved = localStorage.getItem('pinyinquiz_speed');
@@ -196,9 +397,20 @@ speedRange.addEventListener('input', () => {
 
 // ===== Quiz flow =====
 startBtn.addEventListener('click', () => {
+  const name = studentNameInput.value.trim();
+  if (!name) {
+    studentNameInput.classList.add('input-error');
+    studentNameInput.focus();
+    return;
+  }
+  studentNameInput.classList.remove('input-error');
+  currentStudentName = name;
+  localStorage.setItem('pinyinquiz_name', name);
+
   questions = buildAllQuestions();
   currentIndex = 0;
   score = 0;
+  answerLog = [];
   groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
   startScreen.classList.add('hidden');
   resultScreen.classList.add('hidden');
@@ -291,6 +503,16 @@ function selectOption(opt, btnEl) {
     score++;
   }
 
+  answerLog.push({
+    id: q.id,
+    hanzi: q.hanzi,
+    type: q.type,
+    hint: q.hintKnown || '',
+    correct: q.correct,
+    selected: opt,
+    isCorrect,
+  });
+
   Array.from(optionsContainer.children).forEach(btn => {
     btn.disabled = true;
     if (btn.textContent === q.correct) btn.classList.add('correct');
@@ -322,4 +544,20 @@ function showResults() {
     row.textContent = `Nhóm ${label[g]}: ${s.correct}/${s.total} (${p}%)`;
     resultBreakdown.appendChild(row);
   });
+
+  const payload = {
+    studentName: currentStudentName,
+    score,
+    total: questions.length,
+    percent: pct,
+    groupStats,
+    answers: answerLog,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (SAVE_MODE === 'sheet') {
+    sendScoreToSheet(payload);
+  } else if (SAVE_MODE === 'excel') {
+    saveResultToExcel(payload);
+  }
 }
