@@ -18,7 +18,6 @@ const SINGLES = [
 
   { id: 'n009', hanzi: '妈', pinyin: 'mā',  group: 'bpmf' },
   { id: 'n010', hanzi: '马', pinyin: 'mǎ',  group: 'bpmf' },
-  { id: 'n011', hanzi: '米', pinyin: 'mǐ',  group: 'bpmf' },
   { id: 'n012', hanzi: '帽', pinyin: 'mào', group: 'bpmf' },
 
   { id: 'n013', hanzi: '发', pinyin: 'fā',  group: 'bpmf' },
@@ -42,7 +41,6 @@ const SINGLES = [
   { id: 'n027', hanzi: '闹', pinyin: 'nào', group: 'dtnl' },
 
   { id: 'n028', hanzi: '里', pinyin: 'lǐ',  group: 'dtnl' },
-  { id: 'n029', hanzi: '绿', pinyin: 'lǜ',  group: 'dtnl' },
 
   // ===== Nhóm g k h =====
   { id: 'n030', hanzi: '高', pinyin: 'gāo', group: 'gkh' },
