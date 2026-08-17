@@ -1,4 +1,13 @@
-// ===== Đánh dấu thanh điệu =====
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===== Đánh dấu thanh điệu (dùng để dựng 4 biến thể dấu thanh của 1 âm tiết) =====
 const TONE_MARKS = {
   'a': ['a', 'ā', 'á', 'ǎ', 'à'],
   'o': ['o', 'ō', 'ó', 'ǒ', 'ò'],
@@ -24,20 +33,8 @@ const GROUP_INITIALS = {
   gkh: ['g', 'k', 'h'],
 };
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 // Tách 1 chuỗi pinyin có dấu (vd "bǎo") thành initial/final/tone, dựa theo
-// nhóm thanh mẫu của từ. data.js hiện chỉ lưu sẵn `pinyin` dạng chuỗi (không
-// tách sẵn initial/final/tone như trước), nên cần tách ngược lại ở đây.
-// Quy ước giống buildPinyin/toneFinal: dấu thanh luôn nằm ở KÝ TỰ ĐẦU của
-// phần vận mẫu.
+// nhóm thanh mẫu của từ. Quy ước: dấu thanh luôn nằm ở KÝ TỰ ĐẦU của vận mẫu.
 function parsePinyin(pinyin, group) {
   const initial = GROUP_INITIALS[group].find(i => pinyin.startsWith(i)) || '';
   const rest = pinyin.slice(initial.length);
@@ -51,49 +48,30 @@ function parsePinyin(pinyin, group) {
   return { initial, final: rest, tone: 0 };
 }
 
-// Câu hỏi nhận diện PHỤ ÂM ĐẦU: vận mẫu + thanh điệu đã biết (hiện làm gợi ý),
-// 4 đáp án chỉ khác nhau ở phụ âm đầu.
+// Câu hỏi cho 1 từ đơn âm tiết (SINGLES): nghe rồi chọn đúng dấu thanh điệu
+// trong 4 lựa chọn — cả 4 đáp án cùng phụ âm đầu + vận mẫu, chỉ khác tone
+// (1/2/3/4). Không hiện gợi ý phần đã biết.
 function buildSingleQuestion(item) {
-  const { initial, final, tone } = parsePinyin(item.pinyin, item.group);
-  const initials = GROUP_INITIALS[item.group];
-  let options = initials.map(i => buildPinyin(i, final, tone));
-  if (initials.length < 4) {
-    let otherTone;
-    do { otherTone = 1 + Math.floor(Math.random() * 4); } while (otherTone === tone);
-    const extra = buildPinyin(initial, final, otherTone);
-    if (!options.includes(extra)) options.push(extra);
-  }
-  return {
-    id: item.id,
-    type: 'initial',
-    hanzi: item.hanzi,
-    group: item.group,
-    hintType: 'initial',
-    hintKnown: toneFinal(final, tone), // vd: "āo" — phần đã biết, phụ âm đầu bị ẩn
-    correct: item.pinyin,
-    options: shuffle(options),
-  };
-}
-
-// Câu hỏi nhận diện THANH ĐIỆU: phụ âm đầu + vận mẫu đã biết (hiện làm gợi ý),
-// 4 đáp án cùng phụ âm đầu + vận mẫu, chỉ khác dấu thanh (1/2/3/4).
-function buildToneQuestion(item) {
   const { initial, final } = parsePinyin(item.pinyin, item.group);
-  const options = [1, 2, 3, 4].map(tone => buildPinyin(initial, final, tone));
+  const options = shuffle([1, 2, 3, 4].map(tone => buildPinyin(initial, final, tone)));
   return {
     id: item.id,
-    type: 'tone',
+    type: 'single',
     hanzi: item.hanzi,
     group: item.group,
-    hintType: 'tone',
-    hintKnown: initial + final, // vd: "li" — phần đã biết, dấu thanh bị ẩn
+    hintType: null,
+    hintKnown: null,
     correct: item.pinyin,
-    options: shuffle(options),
+    options,
   };
 }
 
-function buildDoubleQuestion(item, allDoubles) {
-  const others = allDoubles.filter(d => d !== item && d.pinyin !== item.pinyin);
+// Câu hỏi cho 1 từ 2 âm tiết (DOUBLES): nghe rồi chọn đúng pinyin đầy đủ
+// trong 4 lựa chọn, đáp án nhiễu lấy từ các từ 2 âm tiết khác (khác pinyin
+// với từ đang hỏi). pool dùng danh sách gốc (không giới hạn từ đã có audio)
+// để luôn đủ nhiễu.
+function buildDoubleQuestion(item, pool) {
+  const others = pool.filter(d => d !== item && d.pinyin !== item.pinyin);
   const distractors = shuffle(others).slice(0, 3).map(d => d.pinyin);
   const options = shuffle([item.pinyin, ...distractors]);
   return {
@@ -110,14 +88,13 @@ function buildDoubleQuestion(item, allDoubles) {
 
 const QUESTIONS_PER_SESSION = 30;
 
-// Kho câu hỏi giữ đủ cả 2 dạng (phụ âm đầu + thanh điệu) cho các từ đã có
-// audio (availableSingles). Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên
+// Kho câu hỏi: mỗi từ đã có audio (availableSingles/availableDoubles) sinh
+// đúng 1 câu hỏi. Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên
 // QUESTIONS_PER_SESSION câu trong kho đó.
 function buildAllQuestions() {
-  const initialQs = availableSingles.map(buildSingleQuestion);
-  const toneQs = availableSingles.map(buildToneQuestion);
+  const singleQs = availableSingles.map(buildSingleQuestion);
   const doubleQs = availableDoubles.map(item => buildDoubleQuestion(item, DOUBLES));
-  const pool = shuffle([...initialQs, ...toneQs, ...doubleQs]);
+  const pool = shuffle([...singleQs, ...doubleQs]);
   return pool.slice(0, QUESTIONS_PER_SESSION);
 }
 
@@ -190,7 +167,7 @@ async function loadAvailableItems() {
   const doubleChecks = await Promise.all(DOUBLES.map(item => checkAudioAvailable(item.id)));
   availableDoubles = DOUBLES.filter((_, idx) => doubleChecks[idx]);
 
-  const total = availableSingles.length * 2 + availableDoubles.length;
+  const total = availableSingles.length + availableDoubles.length;
   if (total === 0) {
     startBtn.textContent = 'Chưa có file audio nào';
   } else {
@@ -383,7 +360,7 @@ function sendScoreToSheet(payload) {
 // ===== Tốc độ =====
 function initSpeed() {
   const saved = localStorage.getItem('pinyinquiz_speed');
-  const val = saved ? parseFloat(saved) : 1.0;
+  const val = saved ? parseFloat(saved) : 0.4;
   speedRange.value = val;
   speedLabel.textContent = val.toFixed(2) + 'x';
 }
