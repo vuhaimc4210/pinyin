@@ -144,13 +144,18 @@ function playQuestionAudio(q) {
 
 // Kiểm tra file audio/<id>.mp3 có tồn tại không (đã tải sẵn từ trước).
 // Bài học chỉ dùng những từ đã có file, nên phải kiểm tra xong mới cho bắt đầu làm bài.
+// Dùng fetch (HEAD) thay vì tạo <audio> rồi chờ 'loadedmetadata': nhiều trình
+// duyệt di động (đặc biệt Safari iOS) chặn không cho phần tử audio tải bất cứ
+// gì (kể cả metadata) trước khi có cử chỉ chạm của người dùng trên trang —
+// khiến sự kiện 'loadedmetadata' không bao giờ bắn, Promise treo vô hạn và
+// nút "Bắt đầu" không bao giờ được bật. fetch không bị giới hạn này.
 function checkAudioAvailable(id) {
-  return new Promise((resolve) => {
-    const audioEl = new Audio(`${AUDIO_DIR}${id}.mp3`);
-    audioEl.preload = 'metadata';
-    audioEl.addEventListener('loadedmetadata', () => resolve(true), { once: true });
-    audioEl.addEventListener('error', () => resolve(false), { once: true });
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  return fetch(`${AUDIO_DIR}${id}.mp3`, { method: 'HEAD', signal: controller.signal })
+    .then((res) => res.ok)
+    .catch(() => false)
+    .finally(() => clearTimeout(timeout));
 }
 
 async function loadAvailableItems() {
