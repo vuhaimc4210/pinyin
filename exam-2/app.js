@@ -98,6 +98,7 @@ let groupStats = { jqx: { correct: 0, total: 0 } };
 let availableSingles = [];
 let availableDoubles = [];
 let currentStudentName = '';
+let currentStudentClass = '';
 let answerLog = [];
 
 // ===== DOM =====
@@ -105,10 +106,11 @@ const startScreen = document.getElementById('startScreen');
 const quizScreen = document.getElementById('quizScreen');
 const resultScreen = document.getElementById('resultScreen');
 const studentNameInput = document.getElementById('studentName');
+const studentClassSelect = document.getElementById('studentClass');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
-const speedRange = document.getElementById('speedRange');
-const speedLabel = document.getElementById('speedLabel');
+const speedButtons = document.querySelectorAll('.speed-btn');
+let currentSpeed = 1;
 const hanziChar = document.getElementById('hanziChar');
 const pinyinHint = document.getElementById('pinyinHint');
 const playBtn = document.getElementById('playBtn');
@@ -135,7 +137,7 @@ function stopAllAudio() {
 function playQuestionAudio(q) {
   stopAllAudio();
   const audioEl = new Audio(`${AUDIO_DIR}${q.id}.mp3`);
-  audioEl.playbackRate = parseFloat(speedRange.value);
+  audioEl.playbackRate = currentSpeed;
   currentAudioEl = audioEl;
   audioEl.play().catch((err) => console.error('Không phát được audio:', err));
 }
@@ -171,13 +173,19 @@ loadAvailableItems();
 
 // ===== Tên học sinh =====
 function initStudentName() {
-  const saved = localStorage.getItem('pinyinquiz_name');
-  if (saved) studentNameInput.value = saved;
+  const savedName = localStorage.getItem('pinyinquiz_name');
+  if (savedName) studentNameInput.value = savedName;
+  const savedClass = localStorage.getItem('pinyinquiz_class');
+  if (savedClass) studentClassSelect.value = savedClass;
 }
 initStudentName();
 
 studentNameInput.addEventListener('input', () => {
   studentNameInput.classList.remove('input-error');
+});
+
+studentClassSelect.addEventListener('change', () => {
+  studentClassSelect.classList.remove('input-error');
 });
 
 // ===== Nơi lưu kết quả =====
@@ -349,31 +357,45 @@ function sendScoreToSheet(payload) {
 }
 
 // ===== Tốc độ =====
+function setSpeed(val, save) {
+  currentSpeed = val;
+  speedButtons.forEach((btn) => {
+    btn.classList.toggle('active', parseFloat(btn.dataset.speed) === val);
+  });
+  if (save) localStorage.setItem('pinyinquiz_speed', val);
+}
+
 function initSpeed() {
-  const saved = localStorage.getItem('pinyinquiz_speed');
-  const val = saved ? parseFloat(saved) : 0.4;
-  speedRange.value = val;
-  speedLabel.textContent = val.toFixed(2) + 'x';
+  const saved = parseFloat(localStorage.getItem('pinyinquiz_speed'));
+  const val = (saved === 0.8 || saved === 1) ? saved : 1;
+  setSpeed(val, false);
 }
 initSpeed();
 
-speedRange.addEventListener('input', () => {
-  const val = parseFloat(speedRange.value);
-  speedLabel.textContent = val.toFixed(2) + 'x';
-  localStorage.setItem('pinyinquiz_speed', val);
+speedButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setSpeed(parseFloat(btn.dataset.speed), true);
+  });
 });
 
 // ===== Quiz flow =====
 startBtn.addEventListener('click', () => {
   const name = studentNameInput.value.trim();
-  if (!name) {
-    studentNameInput.classList.add('input-error');
-    studentNameInput.focus();
+  const studentClass = studentClassSelect.value;
+
+  if (!name) studentNameInput.classList.add('input-error');
+  if (!studentClass) studentClassSelect.classList.add('input-error');
+  if (!name || !studentClass) {
+    (!name ? studentNameInput : studentClassSelect).focus();
     return;
   }
+
   studentNameInput.classList.remove('input-error');
+  studentClassSelect.classList.remove('input-error');
   currentStudentName = name;
+  currentStudentClass = studentClass;
   localStorage.setItem('pinyinquiz_name', name);
+  localStorage.setItem('pinyinquiz_class', studentClass);
 
   questions = buildAllQuestions();
   currentIndex = 0;

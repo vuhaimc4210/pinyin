@@ -17,24 +17,27 @@
 
   <div class="card">
     <div class="controls-row">
-      <label for="speedRange">Tốc độ đọc</label>
+      <label>Tốc độ đọc</label>
       <div class="speed-line">
-        <input type="range" id="speedRange" min="0.1" max="1.5" step="0.05" value="0.4">
-        <span id="speedLabel">0.40x</span>
+        <button type="button" class="speed-btn" data-speed="0.8">Chậm</button>
+        <button type="button" class="speed-btn" data-speed="1">Bình thường</button>
       </div>
     </div>
-    <p class="note">
-      Bài học chỉ dùng những từ đã có file phát âm chuẩn thu sẵn (thư mục <code>audio/</code>). Mỗi từ
-      sinh đúng 1 câu hỏi: nghe rồi chọn đúng dấu thanh điệu trong 4 đáp án (cùng thanh mẫu +
-      vận mẫu, chỉ khác tone). Mỗi lượt làm bài lấy ngẫu nhiên tối đa 20 câu trong kho câu hỏi —
-      bấm "Làm lại" để luyện một lượt câu ngẫu nhiên khác.
-    </p>
   </div>
 
   <div id="startScreen" class="card">
     <div class="controls-row">
       <label for="studentName">Tên học sinh</label>
       <input type="text" id="studentName" class="text-input" placeholder="Nhập tên của bạn" autocomplete="name">
+    </div>
+    <div class="controls-row">
+      <label for="studentClass">Lớp</label>
+      <select id="studentClass" class="text-input" required>
+        <option value="" disabled selected>-- Chọn lớp --</option>
+        <option value="C1-01">C1-01</option>
+        <option value="C1-02">C1-02</option>
+        <option value="C1-03">C1-03</option>
+      </select>
     </div>
     <button id="startBtn" class="btn-primary" disabled>Đang kiểm tra dữ liệu audio...</button>
   </div>

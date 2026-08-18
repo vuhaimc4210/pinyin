@@ -87,7 +87,19 @@ h1 {
 .speed-line {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.speed-btn {
+  flex: 1;
+  background: #f6f3fb;
+  color: #2d2a32;
+  padding: 10px 16px;
+}
+
+.speed-btn.active {
+  background: #7b3fe4;
+  color: #fff;
 }
 
 .text-input {
@@ -101,16 +113,6 @@ h1 {
 .text-input.input-error {
   border-color: #ff3b30;
   outline: 2px solid #ffd6d6;
-}
-
-#speedRange { flex: 1; }
-
-#speedLabel {
-  font-variant-numeric: tabular-nums;
-  min-width: 54px;
-  text-align: right;
-  font-weight: 700;
-  color: #7b3fe4;
 }
 
 .note {
