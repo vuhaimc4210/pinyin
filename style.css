@@ -29,6 +29,39 @@ h1 {
   margin-bottom: 20px;
 }
 
+.lesson-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.lesson-link {
+  display: inline-block;
+  cursor: pointer;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #efe9fb;
+  color: #7b3fe4;
+  text-decoration: none;
+  text-align: center;
+  transition: transform .05s ease, filter .15s ease;
+}
+
+.lesson-link:active {
+  transform: scale(0.97);
+}
+
+.lesson-link.active {
+  background: #7b3fe4;
+  color: #fff;
+  cursor: default;
+}
+
 .card {
   background: #fff;
   border-radius: 16px;
