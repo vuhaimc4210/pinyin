@@ -1,0 +1,24 @@
+Tạo cho tôi 1 web bài tập từ các thanh mẫu j, q, x, Vận mẫu ia, ie, iao, iou, ian, in, iang, ing, iongvà 4 thanh mẫu  nói ra 2 từ và để trống từ đó, thêm các đáp án để lựa chọn. Và thêm dạng bài nói chữ ghép thanh mẫu hoặc ghép vận mẫu hoặc ghép thanh điệu. Thêm phần điều chỉnh tốc độ giọng đọc mẫu.
+
+Nhóm thanh mẫu: j, q, x (Đi với vận mẫu bắt đầu bằng i)
+1. jié (节 - tiết): Ngày lễ, tiết trời
+2. jiǎo (脚 - cước): Chân
+3. jìn (进 - tiến): Tiến vào
+4. jiàn (见 - kiến): Nhìn thấy
+5. jiǔ (酒 - tửu): Rượu
+6. jiǎng (讲 - giảng): Nói, giảng giải
+7. jīng (京 - kinh): Thủ đô
+8. qiāo (敲 - khiêu): Gõ
+9. qīn (亲 - thân): Thân thiết, họ hàng
+10. qiān (千 - thiên): Số một nghìn
+11. qiǎng (抢 - thưởng/cưởng): Cướp, tranh giành
+12. qīng (青 - thanh): Màu xanh
+13. xié (鞋 - hài): Giày
+14. xīn (心 - tâm): Tim, tấm lòng 
+15. xiàn (线 - tuyến): Sợi chỉ, tuyến 
+xīn (心 - tâm): Tim, tấm lòng
+16.xīng (星 - tinh): Ngôi sao
+17. xiū (休 - hưu): Nghỉ ngơi
+18. xiǎng (想 - tưởng): Nghĩ, muốn
+19. xiōng (凶 - hung): Hung ác
+20.xiāo (消 - tiêu): Tiêu tan, tiêu diệt

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luyện nghe Pinyin: j q x</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="app">
+  <h1>Luyện nghe Pinyin</h1>
+  <p class="subtitle">Thanh mẫu j q x — Vận mẫu ia ie iao iou ian in iang ing iong — 20 từ</p>
+
+  <div class="card">
+    <div class="controls-row">
+      <label for="speedRange">Tốc độ đọc</label>
+      <div class="speed-line">
+        <input type="range" id="speedRange" min="0.1" max="1.5" step="0.05" value="0.4">
+        <span id="speedLabel">0.40x</span>
+      </div>
+    </div>
+    <p class="note">
+      Bài học chỉ dùng những từ đã có file phát âm chuẩn thu sẵn (thư mục <code>audio/</code>). Mỗi từ
+      sinh đúng 1 câu hỏi: nghe rồi chọn đúng dấu thanh điệu trong 4 đáp án (cùng thanh mẫu +
+      vận mẫu, chỉ khác tone). Mỗi lượt làm bài lấy ngẫu nhiên tối đa 20 câu trong kho câu hỏi —
+      bấm "Làm lại" để luyện một lượt câu ngẫu nhiên khác.
+    </p>
+  </div>
+
+  <div id="startScreen" class="card">
+    <div class="controls-row">
+      <label for="studentName">Tên học sinh</label>
+      <input type="text" id="studentName" class="text-input" placeholder="Nhập tên của bạn" autocomplete="name">
+    </div>
+    <button id="startBtn" class="btn-primary" disabled>Đang kiểm tra dữ liệu audio...</button>
+  </div>
+
+  <div id="quizScreen" class="card hidden">
+    <div class="score-live" id="scoreLive">Điểm: 0</div>
+    <div class="progress-wrap">
+      <span id="progressText">Câu 1 / 20</span>
+    </div>
+    <div class="progress-track"><div id="progressBar"></div></div>
+
+    <div class="hanzi-display">
+      <span class="hint-mark">?</span>
+      <span id="hanziChar" class="hanzi-char"></span>
+    </div>
+    <div id="pinyinHint" class="pinyin-hint"></div>
+
+    <button id="playBtn" class="btn-play">🔊 Nghe từ</button>
+
+    <div id="optionsContainer" class="options-grid"></div>
+
+    <div id="feedback" class="feedback"></div>
+
+    <button id="nextBtn" class="hidden">Câu tiếp theo →</button>
+  </div>
+
+  <div id="resultScreen" class="card hidden">
+    <h2 style="text-align:center;">Kết quả</h2>
+    <div id="resultScore"></div>
+    <div id="resultBreakdown"></div>
+    <button id="restartBtn" class="btn-primary" style="margin-top:16px;">Làm lại</button>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
