@@ -13,10 +13,10 @@ const REVIEW_MODE = 'excel'; // 'excel' | 'sheet'
 // Script khi dùng REVIEW_MODE = 'sheet'.
 const TEACHER_CODE = 'FPbrDXtM';
 
-// Dán URL Apps Script Web App vào đây khi REVIEW_MODE = 'sheet' (cùng URL với
-// SCORE_WEBHOOK_URL trong app.js, vì cùng 1 script xử lý cả ghi điểm (doPost)
-// và đọc lại kết quả (doGet)).
-const REVIEW_WEBHOOK_URL = null; // vd: 'https://script.google.com/macros/s/AKfycb.../exec'
+// URL Apps Script Web App khi REVIEW_MODE = 'sheet' — lấy chung từ config.js
+// (cùng URL dùng để ghi điểm trong app.js, vì cùng 1 script xử lý cả ghi
+// điểm (doPost) và đọc lại kết quả (doGet)).
+const REVIEW_WEBHOOK_URL = GOOGLE_SHEET_WEBHOOK_URL;
 
 // File Excel cố định nằm cùng thư mục web — gộp các dòng kết quả học sinh tải
 // về vào đây (giữ đúng 1 dòng tiêu đề ở trên cùng) rồi deploy lại.
@@ -26,16 +26,8 @@ const teacherPasswordInput = document.getElementById('teacherPassword');
 const loadBtn = document.getElementById('loadBtn');
 const loadStatus = document.getElementById('loadStatus');
 const submissionList = document.getElementById('submissionList');
-const detailPanel = document.getElementById('detailPanel');
-const detailTitle = document.getElementById('detailTitle');
-const detailList = document.getElementById('detailList');
-const closeDetailBtn = document.getElementById('closeDetailBtn');
-
-const TYPE_LABEL = { initial: 'Phụ âm đầu', tone: 'Thanh điệu', double: 'Từ 2 âm tiết' };
 
 let submissions = [];
-
-closeDetailBtn.addEventListener('click', () => detailPanel.classList.add('hidden'));
 
 function checkPassword() {
   const pass = teacherPasswordInput.value.trim();
@@ -59,7 +51,6 @@ loadBtn.addEventListener('click', () => {
 async function loadFromExcel() {
   loadStatus.textContent = 'Đang tải...';
   submissionList.innerHTML = '';
-  detailPanel.classList.add('hidden');
 
   try {
     const res = await fetch(RESULTS_FILE_PATH, { cache: 'no-store' });
@@ -85,23 +76,19 @@ async function loadFromExcel() {
   }
 }
 
-function safeParseJson(text) {
-  try { return JSON.parse(text); } catch (err) { return null; }
-}
-
 // File có 1 dòng tiêu đề + nhiều dòng kết quả (mỗi dòng = 1 lượt làm bài, gộp
-// từ các file .xlsx học sinh tải về).
+// từ các file .xlsx học sinh tải về). Cột: Thời gian, Tên, Tên bài, Phần, Số
+// điểm, Tổng số câu.
 function rowsToSubmissions(rows) {
   return rows.slice(1).filter((r) => r.length > 0 && r[0]).map((row) => {
-    const [timestamp, studentName, score, total, percent, groupStatsJson, answersJson] = row;
+    const [timestamp, studentName, examName, part, score, total] = row;
     return {
       timestamp,
       studentName,
+      examName,
+      part,
       score: Number(score),
       total: Number(total),
-      percent: Number(percent),
-      groupStats: safeParseJson(groupStatsJson) || {},
-      answers: safeParseJson(answersJson) || [],
     };
   });
 }
@@ -115,7 +102,6 @@ async function loadFromSheet() {
 
   loadStatus.textContent = 'Đang tải...';
   submissionList.innerHTML = '';
-  detailPanel.classList.add('hidden');
 
   try {
     const url = `${REVIEW_WEBHOOK_URL}?code=${encodeURIComponent(TEACHER_CODE)}`;
@@ -140,42 +126,14 @@ function formatTime(value) {
 
 function renderSubmissionList() {
   submissionList.innerHTML = '';
-  submissions.forEach((sub, idx) => {
+  submissions.forEach((sub) => {
     const row = document.createElement('div');
     row.className = 'word-row';
 
     const info = document.createElement('span');
-    info.textContent = `${sub.studentName} — ${sub.score}/${sub.total} (${sub.percent}%) — ${formatTime(sub.timestamp)}`;
+    info.textContent = `${sub.studentName} — ${sub.examName} [${sub.part}] — ${sub.score}/${sub.total} — ${formatTime(sub.timestamp)}`;
 
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.textContent = 'Xem chi tiết';
-    btn.addEventListener('click', () => showDetail(idx));
-
-    row.append(info, btn);
+    row.append(info);
     submissionList.appendChild(row);
   });
-}
-
-function showDetail(idx) {
-  const sub = submissions[idx];
-  detailTitle.textContent = `${sub.studentName} — ${sub.score}/${sub.total} (${sub.percent}%) — ${formatTime(sub.timestamp)}`;
-  detailList.innerHTML = '';
-
-  (sub.answers || []).forEach((a, i) => {
-    const row = document.createElement('div');
-    row.className = 'word-row';
-
-    const text = document.createElement('span');
-    text.textContent = `Câu ${i + 1}: ${a.hanzi} [${TYPE_LABEL[a.type] || a.type}] — đúng: ${a.correct} — chọn: ${a.selected}`;
-
-    const badge = document.createElement('span');
-    badge.className = 'badge ' + (a.isCorrect ? 'badge-correct' : 'badge-missing');
-    badge.textContent = a.isCorrect ? 'Đúng' : 'Sai';
-
-    row.append(text, badge);
-    detailList.appendChild(row);
-  });
-
-  detailPanel.classList.remove('hidden');
 }

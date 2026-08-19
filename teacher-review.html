@@ -9,7 +9,7 @@
 <body>
 <div class="app">
   <h1>Xem lại kết quả học sinh</h1>
-  <p class="subtitle">Dành cho giáo viên — xem điểm và chi tiết từng câu trả lời của học sinh.</p>
+  <p class="subtitle">Dành cho giáo viên — xem điểm từng lượt làm bài của học sinh.</p>
 
   <div class="card">
     <div class="controls-row">
@@ -23,15 +23,10 @@
   <div class="card">
     <div id="submissionList" class="word-list"></div>
   </div>
-
-  <div id="detailPanel" class="card hidden">
-    <button id="closeDetailBtn" class="btn-secondary">← Đóng chi tiết</button>
-    <h2 id="detailTitle" class="section-title"></h2>
-    <div id="detailList" class="word-list"></div>
-  </div>
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="config.js"></script>
 <script src="teacher-review.js"></script>
 </body>
 </html>

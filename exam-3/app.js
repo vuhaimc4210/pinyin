@@ -354,20 +354,16 @@ els.startBtn.addEventListener('click', () => {
   renderQuestion(true);
 });
 
-/* ===== 9. Lưu kết quả (giống bài 1/2/3 — đang tắt, đổi SAVE_MODE khi cần dùng) ===== */
-const SAVE_MODE = 'off'; // 'off' | 'excel' | 'sheet'
-const SCORE_WEBHOOK_URL = null;
+/* ===== 9. Lưu kết quả (giống bài 1/2/3 — ghi lên Google Sheet, cần điền URL trong config.js) ===== */
+const SAVE_MODE = 'sheet'; // 'off' | 'excel' | 'sheet' — URL lấy từ config.js
+const EXAM_NAME = 'Bài 3';
 
-const XLSX_HEADERS = [
-  'Thời gian', 'Tên học sinh', 'Lớp', 'Dạng câu hỏi', 'Điểm', 'Tổng số câu', 'Phần trăm',
-  'Chi tiết theo nhóm (JSON)', 'Chi tiết bài làm (JSON)',
-];
+const XLSX_HEADERS = ['Thời gian', 'Tên', 'Tên bài', 'Phần', 'Số điểm', 'Tổng số câu'];
 
 function payloadToRow(payload) {
   return [
-    payload.timestamp, payload.studentName, payload.studentClass, payload.modeLabel,
-    payload.score, payload.total, payload.percent,
-    JSON.stringify(payload.groupStats), JSON.stringify(payload.answers),
+    payload.timestamp, payload.studentName, payload.examName, payload.modeLabel,
+    payload.score, payload.total,
   ];
 }
 
@@ -381,8 +377,8 @@ function downloadResultAsXlsx(payload) {
 }
 
 function sendScoreToSheet(payload) {
-  if (!SCORE_WEBHOOK_URL) return;
-  fetch(SCORE_WEBHOOK_URL, {
+  if (!GOOGLE_SHEET_WEBHOOK_URL) return;
+  fetch(GOOGLE_SHEET_WEBHOOK_URL, {
     method: 'POST', mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
@@ -393,6 +389,7 @@ function saveResult() {
   const payload = {
     studentName: currentStudentName,
     studentClass: currentStudentClass,
+    examName: EXAM_NAME,
     modeLabel: MODE_CONFIG[mode].vn,
     score,
     total: availableData.length,
