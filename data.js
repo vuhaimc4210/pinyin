@@ -1,56 +1,68 @@
-// Dữ liệu bài tập bổ sung (bộ 2): 30 từ, lấy từ new-data
-// Khác với data.js: giữ nguyên `pinyin` dạng chuỗi có sẵn (không tách initial/final/tone).
-// group: 'bpmf' | 'dtnl' | 'gkh' -> quyết định các đáp án nhiễu (cùng nhóm thanh mẫu)
-// id: khoá cố định, dùng làm TÊN FILE AUDIO (audio/<id>.mp3) khi có phát âm chuẩn thu sẵn.
-//     KHÔNG đổi id của item đã có, nếu không sẽ mất liên kết với file audio đã tải.
+// Dữ liệu bài 1 (b p m f · d t n l · g k h): 30 từ, độc lập hoàn toàn — không
+// tham chiếu chéo sang thư mục nào khác.
+// group: 'bpmf' | 'dtnl' | 'gkh' -> quyết định các đáp án nhiễu cùng nhóm thanh mẫu.
+// meaning: nghĩa tiếng Việt, lấy từ data-origin.txt, hiển thị trong feedback sau khi chọn đáp án.
+// id: khoá cố định, TRÙNG với tên file audio (audio/<id>.mp3, tính từ thư mục gốc này).
+//     KHÔNG đổi id của item đã có, nếu không sẽ mất liên kết với file audio.
+// Lưu ý #30: file audio là "30.狗.mp3" (gǒu - con chó), khác với data-origin.txt gốc
+// ghi nhầm là "够 (gòu - đủ)". Đã sửa theo audio vì đó là bản ghi thật.
 
 const SINGLES = [
-  // ===== Nhóm b p m f =====
-  { id: 'n001', hanzi: '八', pinyin: 'bā',  group: 'bpmf' },
-  { id: 'n002', hanzi: '拔', pinyin: 'bá',  group: 'bpmf' },
-  { id: 'n003', hanzi: '保', pinyin: 'bǎo', group: 'bpmf' },
-  { id: 'n004', hanzi: '抱', pinyin: 'bào', group: 'bpmf' },
+  // ===== Thanh mẫu b =====
+  { id: '1.八',  hanzi: '八', pinyin: 'bā',  group: 'bpmf', meaning: 'Số tám' },
+  { id: '2.白',  hanzi: '白', pinyin: 'bái', group: 'bpmf', meaning: 'Màu trắng' },
+  { id: '23.不', hanzi: '不', pinyin: 'bù',  group: 'bpmf', meaning: 'Không' },
 
-  { id: 'n005', hanzi: '怕', pinyin: 'pà',  group: 'bpmf' },
-  { id: 'n006', hanzi: '皮', pinyin: 'pí',  group: 'bpmf' },
-  { id: 'n007', hanzi: '匹', pinyin: 'pǐ',  group: 'bpmf' },
-  { id: 'n008', hanzi: '炮', pinyin: 'pào', group: 'bpmf' },
+  // ===== Thanh mẫu p =====
+  { id: '3.跑',  hanzi: '跑', pinyin: 'pǎo', group: 'bpmf', meaning: 'Chạy' },
+  { id: '4.皮',  hanzi: '皮', pinyin: 'pí',  group: 'bpmf', meaning: 'Da, vỏ' },
+  { id: '24.扑', hanzi: '扑', pinyin: 'pū',  group: 'bpmf', meaning: 'Vồ, chụp' },
 
-  { id: 'n009', hanzi: '妈', pinyin: 'mā',  group: 'bpmf' },
-  { id: 'n010', hanzi: '马', pinyin: 'mǎ',  group: 'bpmf' },
-  { id: 'n012', hanzi: '帽', pinyin: 'mào', group: 'bpmf' },
+  // ===== Thanh mẫu m =====
+  { id: '5.妈',  hanzi: '妈', pinyin: 'mā',  group: 'bpmf', meaning: 'Mẹ' },
+  { id: '6.米',  hanzi: '米', pinyin: 'mǐ',  group: 'bpmf', meaning: 'Gạo, mét' },
+  { id: '25.买', hanzi: '买', pinyin: 'mǎi', group: 'bpmf', meaning: 'Mua' },
+  { id: '29.猫', hanzi: '猫', pinyin: 'māo', group: 'bpmf', meaning: 'Con mèo' },
 
-  { id: 'n013', hanzi: '发', pinyin: 'fā',  group: 'bpmf' },
-  { id: 'n014', hanzi: '法', pinyin: 'fǎ',  group: 'bpmf' },
-  { id: 'n015', hanzi: '服', pinyin: 'fú',  group: 'bpmf' },
-  { id: 'n016', hanzi: '费', pinyin: 'fèi', group: 'bpmf' },
+  // ===== Thanh mẫu f =====
+  { id: '7.飞',  hanzi: '飞', pinyin: 'fēi', group: 'bpmf', meaning: 'Bay' },
+  { id: '8.副',  hanzi: '副', pinyin: 'fù',  group: 'bpmf', meaning: 'Phó, cặp/bộ' },
 
-  // ===== Nhóm d t n l =====
-  { id: 'n017', hanzi: '大', pinyin: 'dà',  group: 'dtnl' },
-  { id: 'n018', hanzi: '弟', pinyin: 'dì',  group: 'dtnl' },
-  { id: 'n019', hanzi: '度', pinyin: 'dù',  group: 'dtnl' },
-  { id: 'n020', hanzi: '豆', pinyin: 'dòu', group: 'dtnl' },
+  // ===== Thanh mẫu d =====
+  { id: '9.大',  hanzi: '大', pinyin: 'dà',  group: 'dtnl', meaning: 'Lớn, to' },
+  { id: '10.到', hanzi: '到', pinyin: 'dào', group: 'dtnl', meaning: 'Đến, tới' },
+  { id: '26.带', hanzi: '带', pinyin: 'dài', group: 'dtnl', meaning: 'Mang theo, dây đai' },
 
-  { id: 'n021', hanzi: '他', pinyin: 'tā',  group: 'dtnl' },
-  { id: 'n022', hanzi: '体', pinyin: 'tǐ',  group: 'dtnl' },
-  { id: 'n023', hanzi: '兔', pinyin: 'tù',  group: 'dtnl' },
-  { id: 'n024', hanzi: '头', pinyin: 'tóu', group: 'dtnl' },
+  // ===== Thanh mẫu t =====
+  { id: '11.他', hanzi: '他', pinyin: 'tā',  group: 'dtnl', meaning: 'Anh ấy, cậu ấy' },
+  { id: '12.头', hanzi: '头', pinyin: 'tóu', group: 'dtnl', meaning: 'Đầu' },
+  { id: '27.台', hanzi: '台', pinyin: 'tái', group: 'dtnl', meaning: 'Đài, cái (lượng từ cho máy móc)' },
 
-  { id: 'n025', hanzi: '你', pinyin: 'nǐ',  group: 'dtnl' },
-  { id: 'n026', hanzi: '女', pinyin: 'nǚ',  group: 'dtnl' },
-  { id: 'n027', hanzi: '闹', pinyin: 'nào', group: 'dtnl' },
+  // ===== Thanh mẫu n =====
+  { id: '13.你', hanzi: '你', pinyin: 'nǐ',  group: 'dtnl', meaning: 'Bạn, cậu' },
+  { id: '14.拿', hanzi: '拿', pinyin: 'ná',  group: 'dtnl', meaning: 'Cầm, lấy' },
 
-  { id: 'n028', hanzi: '里', pinyin: 'lǐ',  group: 'dtnl' },
+  // ===== Thanh mẫu l =====
+  { id: '15.拉', hanzi: '拉', pinyin: 'lā',  group: 'dtnl', meaning: 'Kéo, dắt' },
+  { id: '16.力', hanzi: '力', pinyin: 'lì',  group: 'dtnl', meaning: 'Sức lực, năng lực' },
+  { id: '28.绿', hanzi: '绿', pinyin: 'lǜ',  group: 'dtnl', meaning: 'Màu xanh lá' },
 
-  // ===== Nhóm g k h =====
-  { id: 'n030', hanzi: '高', pinyin: 'gāo', group: 'gkh' },
+  // ===== Thanh mẫu g =====
+  { id: '17.哥', hanzi: '哥', pinyin: 'gē',  group: 'gkh', meaning: 'Anh trai' },
+  { id: '18.高', hanzi: '高', pinyin: 'gāo', group: 'gkh', meaning: 'Cao' },
+  { id: '30.狗', hanzi: '狗', pinyin: 'gǒu', group: 'gkh', meaning: 'Con chó' },
+
+  // ===== Thanh mẫu k =====
+  { id: '19.科', hanzi: '科', pinyin: 'kē',  group: 'gkh', meaning: 'Khoa, ngành' },
+  { id: '20.口', hanzi: '口', pinyin: 'kǒu', group: 'gkh', meaning: 'Miệng, cái miệng' },
+
+  // ===== Thanh mẫu h =====
+  { id: '21.哈', hanzi: '哈', pinyin: 'hā',  group: 'gkh', meaning: 'Cười ha ha' },
+  { id: '22.好', hanzi: '好', pinyin: 'hǎo', group: 'gkh', meaning: 'Tốt, đẹp' },
 ];
-
-// Bộ 2 hiện chưa có từ 2 âm tiết riêng, để mảng rỗng cho đúng cấu trúc.
-const DOUBLES = [];
 
 // Cho phép tools/fetch-audio.js (chạy bằng Node.js) require() được file này.
 // Trên trình duyệt, biến `module` không tồn tại nên đoạn này tự động bỏ qua, không ảnh hưởng app.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SINGLES: SINGLES, DOUBLES: DOUBLES };
+  module.exports = { SINGLES: SINGLES };
 }

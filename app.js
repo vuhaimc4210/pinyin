@@ -1,14 +1,8 @@
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// ===== Đánh dấu thanh điệu (dùng để dựng 4 biến thể dấu thanh của 1 âm tiết) =====
-const TONE_MARKS = {
+/* ===== 1. Tách pinyin có dấu của data.js (SINGLES) thành initial/final/tone =====
+   Dùng 1 lần khi nạp trang để chuyển dữ liệu gốc (id/hanzi/pinyin) sang dạng
+   {h,i,f,t,id,group} — giống cấu trúc DATA của web-sample — mà không phải chép tay
+   lại 30 từ theo initial/final/tone. */
+const VOWEL_MARKS = {
   'a': ['a', 'ā', 'á', 'ǎ', 'à'],
   'o': ['o', 'ō', 'ó', 'ǒ', 'ò'],
   'e': ['e', 'ē', 'é', 'ě', 'è'],
@@ -16,124 +10,238 @@ const TONE_MARKS = {
   'u': ['u', 'ū', 'ú', 'ǔ', 'ù'],
   'ü': ['ü', 'ǖ', 'ǘ', 'ǚ', 'ǜ'],
 };
+const INITIALS = ['b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h'];
 
-function toneFinal(final, tone) {
-  const first = final[0];
-  const marked = TONE_MARKS[first][tone];
-  return marked + final.slice(1);
-}
-
-function buildPinyin(initial, final, tone) {
-  return initial + toneFinal(final, tone);
-}
-
-const GROUP_INITIALS = {
-  bpmf: ['b', 'p', 'm', 'f'],
-  dtnl: ['d', 't', 'n', 'l'],
-  gkh: ['g', 'k', 'h'],
-};
-
-// Tách 1 chuỗi pinyin có dấu (vd "bǎo") thành initial/final/tone, dựa theo
-// nhóm thanh mẫu của từ. Quy ước: dấu thanh luôn nằm ở KÝ TỰ ĐẦU của vận mẫu.
-function parsePinyin(pinyin, group) {
-  const initial = GROUP_INITIALS[group].find(i => pinyin.startsWith(i)) || '';
-  const rest = pinyin.slice(initial.length);
-  const firstChar = rest[0];
-  for (const base of Object.keys(TONE_MARKS)) {
-    const tone = TONE_MARKS[base].indexOf(firstChar);
-    if (tone !== -1) {
-      return { initial, final: base + rest.slice(1), tone };
+function findAccentedVowel(pinyin) {
+  for (let idx = 0; idx < pinyin.length; idx++) {
+    const ch = pinyin[idx];
+    for (const base of Object.keys(VOWEL_MARKS)) {
+      const tone = VOWEL_MARKS[base].indexOf(ch);
+      if (tone > 0) return { index: idx, base, tone };
     }
   }
-  return { initial, final: rest, tone: 0 };
+  return null;
 }
 
-// Câu hỏi cho 1 từ đơn âm tiết (SINGLES): nghe rồi chọn đúng dấu thanh điệu
-// trong 4 lựa chọn — cả 4 đáp án cùng phụ âm đầu + vận mẫu, chỉ khác tone
-// (1/2/3/4). Không hiện gợi ý phần đã biết.
-function buildSingleQuestion(item) {
-  const { initial, final } = parsePinyin(item.pinyin, item.group);
-  const options = shuffle([1, 2, 3, 4].map(tone => buildPinyin(initial, final, tone)));
-  return {
-    id: item.id,
-    type: 'single',
-    hanzi: item.hanzi,
-    group: item.group,
-    hintType: null,
-    hintKnown: null,
-    correct: item.pinyin,
-    options,
-  };
+// "bái" -> { h:'白', i:'b', f:'ai', t:2, id:'2.白', group:'bpmf' }.
+function toDataItem(item) {
+  const initial = INITIALS.find(x => item.pinyin.startsWith(x));
+  const accent = findAccentedVowel(item.pinyin);
+  const restAfterInitial = item.pinyin.slice(initial.length);
+  const offset = accent.index - initial.length;
+  const final = restAfterInitial.slice(0, offset) + accent.base + restAfterInitial.slice(offset + 1);
+  return { h: item.hanzi, i: initial, f: final, t: accent.tone, id: item.id, group: item.group, meaning: item.meaning };
 }
 
-// Câu hỏi cho 1 từ 2 âm tiết (DOUBLES): nghe rồi chọn đúng pinyin đầy đủ
-// trong 4 lựa chọn, đáp án nhiễu lấy từ các từ 2 âm tiết khác (khác pinyin
-// với từ đang hỏi). pool dùng danh sách gốc (không giới hạn từ đã có audio)
-// để luôn đủ nhiễu.
-function buildDoubleQuestion(item, pool) {
-  const others = pool.filter(d => d !== item && d.pinyin !== item.pinyin);
-  const distractors = shuffle(others).slice(0, 3).map(d => d.pinyin);
-  const options = shuffle([item.pinyin, ...distractors]);
-  return {
-    id: item.id,
-    type: 'double',
-    hanzi: item.hanzi,
-    group: item.group,
-    hintType: null,
-    hintKnown: null,
-    correct: item.pinyin,
-    options,
-  };
+const DATA = SINGLES.map(toDataItem);
+
+/* ===== 2. Bảng dấu thanh điệu theo vận mẫu (copy từ web-sample) ===== */
+const FINAL_TONES = {
+  a:  ['ā', 'á', 'ǎ', 'à'],
+  o:  ['ō', 'ó', 'ǒ', 'ò'],
+  e:  ['ē', 'é', 'ě', 'è'],
+  i:  ['ī', 'í', 'ǐ', 'ì'],
+  u:  ['ū', 'ú', 'ǔ', 'ù'],
+  ü:  ['ǖ', 'ǘ', 'ǚ', 'ǜ'],
+  ai: ['āi', 'ái', 'ǎi', 'ài'],
+  ei: ['ēi', 'éi', 'ěi', 'èi'],
+  ao: ['āo', 'áo', 'ǎo', 'ào'],
+  ou: ['ōu', 'óu', 'ǒu', 'òu'],
+};
+const FINAL_LIST = ['a', 'o', 'e', 'i', 'u', 'ü', 'ai', 'ei', 'ao', 'ou'];
+const FINAL_LABEL = { a: 'a', o: 'o', e: 'e', i: 'i', u: 'u', ü: 'ü', ai: 'ai', ei: 'ei', ao: 'ao', ou: 'ou' };
+const INITIAL_CONFUSE_POOL = ['j', 'q', 'x', 'z', 'c', 's'];
+const TONE_MARKS = ['ˉ', 'ˊ', 'ˇ', 'ˋ'];
+
+function pinyin(initial, final, tone) {
+  return initial + FINAL_TONES[final][tone - 1];
 }
 
-const QUESTIONS_PER_SESSION = 30;
+/* ===== 3. Sinh đáp án nhiễu theo từng dạng bài (copy nguyên logic từ web-sample) ===== */
+function shuffle(arr) { return arr.slice().sort(() => Math.random() - 0.5); }
 
-// Kho câu hỏi: mỗi từ đã có audio (availableSingles/availableDoubles) sinh
-// đúng 1 câu hỏi. Mỗi lần bắt đầu làm bài chỉ lấy ngẫu nhiên
-// QUESTIONS_PER_SESSION câu trong kho đó.
-function buildAllQuestions() {
-  const singleQs = availableSingles.map(buildSingleQuestion);
-  const doubleQs = availableDoubles.map(item => buildDoubleQuestion(item, DOUBLES));
-  const pool = shuffle([...singleQs, ...doubleQs]);
-  return pool.slice(0, QUESTIONS_PER_SESSION);
+function buildOptionsPinyin(item) {
+  const correct = pinyin(item.i, item.f, item.t);
+  const pool = new Set();
+  INITIALS.filter(x => x !== item.i).forEach(ci => pool.add(pinyin(ci, item.f, item.t)));
+  [1, 2, 3, 4].filter(t => t !== item.t).forEach(t => pool.add(pinyin(item.i, item.f, t)));
+  shuffle(FINAL_LIST.filter(f => f !== item.f)).slice(0, 3).forEach(f => pool.add(pinyin(item.i, f, item.t)));
+  pool.delete(correct);
+  const wrong = shuffle(Array.from(pool)).slice(0, 3);
+  return { correct, options: shuffle([...wrong, correct]) };
 }
 
-// ===== Trạng thái =====
-let questions = [];
-let currentIndex = 0;
+function buildOptionsInitial(item) {
+  const correct = item.i;
+  const others = INITIALS.filter(x => x !== item.i);
+  const extraPool = shuffle(INITIAL_CONFUSE_POOL.filter(x => x !== item.i && !others.includes(x)));
+  const wrong = shuffle([...others, extraPool[0], extraPool[1]]).slice(0, 3);
+  return { correct, options: shuffle([...wrong, correct]) };
+}
+
+function buildOptionsFinal(item) {
+  const correct = FINAL_LABEL[item.f];
+  const wrong = shuffle(FINAL_LIST.filter(f => f !== item.f)).slice(0, 3).map(f => FINAL_LABEL[f]);
+  return { correct, options: shuffle([...wrong, correct]) };
+}
+
+function buildOptionsTone(item) {
+  const correct = String(item.t);
+  const options = ['1', '2', '3', '4'];
+  return { correct, options }; // luôn đủ 4 thanh điệu, không xáo để dễ đối chiếu ˉˊˇˋ
+}
+
+const MODE_CONFIG = {
+  pinyin:  { label: '拼音', vn: 'Phiên âm đầy đủ', prompt: 'Nghe và chọn phiên âm đúng',           build: buildOptionsPinyin,  optFmt: o => o },
+  initial: { label: '声母', vn: 'Ghép thanh mẫu',   prompt: 'Nghe và chọn thanh mẫu (âm đầu) đúng',  build: buildOptionsInitial, optFmt: o => o },
+  final:   { label: '韵母', vn: 'Ghép vận mẫu',     prompt: 'Nghe và chọn vận mẫu (âm cuối) đúng',   build: buildOptionsFinal,   optFmt: o => o },
+  tone:    { label: '声调', vn: 'Ghép thanh điệu',  prompt: 'Nghe và chọn thanh điệu đúng',          build: buildOptionsTone,    optFmt: o => o + ' ' + TONE_MARKS[parseInt(o) - 1] },
+};
+
+/* ===== 4. Trạng thái luyện tập ===== */
+let mode = 'pinyin';
+let order = [];
+let idx = 0;
 let score = 0;
 let answered = false;
-let groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
-let availableSingles = [];
-let availableDoubles = [];
+let currentAnswer = null;
+let quizStarted = false;
+let availableData = [];
 let currentStudentName = '';
 let currentStudentClass = '';
 let answerLog = [];
+let groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
 
-// ===== DOM =====
-const startScreen = document.getElementById('startScreen');
-const quizScreen = document.getElementById('quizScreen');
-const resultScreen = document.getElementById('resultScreen');
-const studentNameInput = document.getElementById('studentName');
-const studentClassSelect = document.getElementById('studentClass');
-const startBtn = document.getElementById('startBtn');
-const restartBtn = document.getElementById('restartBtn');
-const speedButtons = document.querySelectorAll('.speed-btn');
-let currentSpeed = 1;
-const hanziChar = document.getElementById('hanziChar');
-const pinyinHint = document.getElementById('pinyinHint');
-const playBtn = document.getElementById('playBtn');
-const progressText = document.getElementById('progressText');
-const progressBar = document.getElementById('progressBar');
-const optionsContainer = document.getElementById('optionsContainer');
-const feedback = document.getElementById('feedback');
-const nextBtn = document.getElementById('nextBtn');
-const scoreLive = document.getElementById('scoreLive');
-const resultScore = document.getElementById('resultScore');
-const resultBreakdown = document.getElementById('resultBreakdown');
+function shuffleDeck() {
+  order = availableData.map((_, i) => i).sort(() => Math.random() - 0.5);
+  idx = 0; score = 0; answered = false; answerLog = [];
+  groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
+}
 
-// ===== Phát audio chuẩn =====
+const els = {
+  startScreen: document.getElementById('startScreen'),
+  studentNameInput: document.getElementById('studentName'),
+  studentClassSelect: document.getElementById('studentClass'),
+  startBtn: document.getElementById('startBtn'),
+  qnum: document.getElementById('qnum'),
+  qtypeBadge: document.getElementById('qtypeBadge'),
+  hanzi: document.getElementById('hanzi'),
+  qprompt: document.getElementById('qprompt'),
+  options: document.getElementById('options'),
+  feedback: document.getElementById('feedback'),
+  nextBtn: document.getElementById('nextBtn'),
+  playBtn: document.getElementById('playBtn'),
+  progressText: document.getElementById('progressText'),
+  scoreText: document.getElementById('scoreText'),
+  barFill: document.getElementById('barFill'),
+  app: document.getElementById('app'),
+  endScreen: document.getElementById('endScreen'),
+  finalScore: document.getElementById('finalScore'),
+  endLabel: document.getElementById('endLabel'),
+  restartBtn: document.getElementById('restartBtn'),
+};
+
+function renderQuestion(autoplay = true) {
+  answered = false;
+  const item = availableData[order[idx]];
+  const cfg = MODE_CONFIG[mode];
+  const { correct, options } = cfg.build(item);
+  currentAnswer = { item, correct, cfg };
+
+  els.qnum.textContent = String(idx + 1).padStart(2, '0');
+  els.qtypeBadge.textContent = cfg.label;
+  els.hanzi.textContent = item.h;
+  els.qprompt.textContent = cfg.prompt;
+  els.feedback.textContent = '';
+  els.feedback.className = 'feedback';
+  els.nextBtn.classList.remove('show');
+  els.progressText.textContent = `Câu ${idx + 1} / ${availableData.length}`;
+  els.scoreText.textContent = `Đúng: ${score}`;
+  els.barFill.style.width = `${(idx / availableData.length) * 100 + 1}%`;
+
+  els.options.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = cfg.optFmt(opt);
+    btn.onclick = () => selectAnswer(btn, opt);
+    els.options.appendChild(btn);
+  });
+
+  if (autoplay) playCurrentAudio();
+}
+
+function selectAnswer(btn, opt) {
+  if (answered) return;
+  answered = true;
+  const isCorrect = opt === currentAnswer.correct;
+  if (isCorrect) score++;
+
+  const item = currentAnswer.item;
+  groupStats[item.group].total++;
+  if (isCorrect) groupStats[item.group].correct++;
+
+  document.querySelectorAll('.opt').forEach(b => { b.disabled = true; });
+  const cfg = currentAnswer.cfg;
+  document.querySelectorAll('.opt').forEach(b => {
+    if (b.textContent === cfg.optFmt(currentAnswer.correct)) b.classList.add('correct');
+    else if (b === btn) b.classList.add('wrong');
+  });
+
+  const fullPinyin = pinyin(item.i, item.f, item.t);
+  els.feedback.textContent = isCorrect
+    ? `✓ Chính xác — ${item.h} (${fullPinyin}) — ${item.meaning}`
+    : `✗ Chưa đúng — đáp án đúng: ${cfg.optFmt(currentAnswer.correct)} — ${item.h} (${fullPinyin}) — ${item.meaning}`;
+  els.feedback.className = 'feedback ' + (isCorrect ? 'ok' : 'no');
+  els.scoreText.textContent = `Đúng: ${score}`;
+  els.nextBtn.classList.add('show');
+
+  answerLog.push({
+    id: item.id, hanzi: item.h, mode, correct: cfg.optFmt(currentAnswer.correct),
+    selected: cfg.optFmt(opt), isCorrect,
+  });
+}
+
+els.nextBtn.onclick = () => {
+  idx++;
+  if (idx >= availableData.length) showEnd(); else renderQuestion();
+};
+
+function showEnd() {
+  els.app.style.display = 'none';
+  els.endScreen.style.display = 'block';
+  els.finalScore.textContent = `${score} / ${availableData.length}`;
+  els.endLabel.textContent = `Số câu trả lời đúng trong lượt luyện "${MODE_CONFIG[mode].vn}" này`;
+  saveResult();
+}
+
+els.restartBtn.onclick = () => {
+  els.endScreen.style.display = 'none';
+  els.app.style.display = 'none';
+  quizStarted = false;
+  els.startScreen.style.display = 'block';
+};
+
+/* ===== 5. Chuyển dạng bài (tabs) =====
+   Nếu đang làm bài thì đổi dạng sẽ xáo lại bộ câu hỏi theo dạng mới ngay
+   (giống web-sample); nếu chưa bắt đầu thì chỉ ghi nhớ lựa chọn, chờ bấm "Bắt đầu làm bài". */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    mode = tab.dataset.mode;
+    if (quizStarted) {
+      els.endScreen.style.display = 'none';
+      els.app.style.display = 'block';
+      shuffleDeck();
+      renderQuestion(false);
+    }
+  };
+});
+
+/* ===== 6. Phát audio (dùng file ghi âm gốc, không TTS) ===== */
 const AUDIO_DIR = 'audio/';
+let currentSpeed = 1;
 let currentAudioEl = null;
 
 function stopAllAudio() {
@@ -143,16 +251,22 @@ function stopAllAudio() {
   }
 }
 
-function playQuestionAudio(q) {
+function playCurrentAudio() {
+  const item = availableData[order[idx]];
   stopAllAudio();
-  const audioEl = new Audio(`${AUDIO_DIR}${q.id}.mp3`);
+  const audioEl = new Audio(`${AUDIO_DIR}${item.id}.mp3`);
   audioEl.playbackRate = currentSpeed;
   currentAudioEl = audioEl;
-  audioEl.play().catch((err) => console.error('Không phát được audio:', err));
+  els.playBtn.disabled = true;
+  audioEl.addEventListener('ended', () => { els.playBtn.disabled = false; });
+  audioEl.play().catch((err) => {
+    els.playBtn.disabled = false;
+    if (err.name === 'AbortError') return;
+    console.error('Không phát được audio:', err);
+  });
 }
+els.playBtn.onclick = playCurrentAudio;
 
-// Kiểm tra file audio/<id>.mp3 có tồn tại không (đã tải sẵn bằng tools/test-internal-web.js).
-// Bài học chỉ dùng những từ đã có file, nên phải kiểm tra xong mới cho bắt đầu làm bài.
 // Dùng fetch (HEAD) thay vì tạo <audio> rồi chờ 'loadedmetadata': nhiều trình
 // duyệt di động (đặc biệt Safari iOS) chặn không cho phần tử audio tải bất cứ
 // gì (kể cả metadata) trước khi có cử chỉ chạm của người dùng trên trang —
@@ -167,210 +281,22 @@ function checkAudioAvailable(id) {
     .finally(() => clearTimeout(timeout));
 }
 
-async function loadAvailableItems() {
-  const singleChecks = await Promise.all(SINGLES.map(item => checkAudioAvailable(item.id)));
-  availableSingles = SINGLES.filter((_, idx) => singleChecks[idx]);
+async function loadAvailableData() {
+  const checks = await Promise.all(DATA.map(item => checkAudioAvailable(item.id)));
+  availableData = DATA.filter((_, i) => checks[i]);
 
-  const doubleChecks = await Promise.all(DOUBLES.map(item => checkAudioAvailable(item.id)));
-  availableDoubles = DOUBLES.filter((_, idx) => doubleChecks[idx]);
-
-  const total = availableSingles.length + availableDoubles.length;
-  if (total === 0) {
-    startBtn.textContent = 'Chưa có file audio nào';
+  if (availableData.length === 0) {
+    els.startBtn.textContent = 'Chưa có file audio nào';
   } else {
-    const sessionSize = Math.min(total, QUESTIONS_PER_SESSION);
-    startBtn.textContent = `Bắt đầu làm bài (${sessionSize} câu)`;
-    startBtn.disabled = false;
+    els.startBtn.textContent = `Bắt đầu làm bài (${availableData.length} câu)`;
+    els.startBtn.disabled = false;
   }
 }
-loadAvailableItems();
+loadAvailableData();
 
-// ===== Tên học sinh =====
-function initStudentName() {
-  const savedName = localStorage.getItem('pinyinquiz_name');
-  if (savedName) studentNameInput.value = savedName;
-  const savedClass = localStorage.getItem('pinyinquiz_class');
-  if (savedClass) studentClassSelect.value = savedClass;
-}
-initStudentName();
+/* ===== 7. Tốc độ đọc (2 mức, thay cho thanh trượt + chọn giọng TTS của web-sample) ===== */
+const speedButtons = document.querySelectorAll('.speed-btn');
 
-studentNameInput.addEventListener('input', () => {
-  studentNameInput.classList.remove('input-error');
-});
-
-studentClassSelect.addEventListener('change', () => {
-  studentClassSelect.classList.remove('input-error');
-});
-
-// ===== Nơi lưu kết quả =====
-// Trang này không có bước build nên không đọc được file .env thật — dùng hằng
-// số này làm "biến môi trường", đổi giá trị rồi deploy lại khi cần chuyển luồng.
-//   'off'   = tắt hẳn việc lưu kết quả (không tải file, không gửi đi đâu cả) —
-//             dùng khi đang test phần làm bài, chưa muốn đụng tới lưu trữ.
-//   'excel' = tải file Excel (.xlsx) về máy ngay khi làm xong bài, không cần
-//             cấu hình gì thêm, dùng được ngay.
-//   'sheet' = gửi lên Google Sheet qua Apps Script Web App (cần điền
-//             SCORE_WEBHOOK_URL bên dưới sau khi deploy Apps Script).
-const SAVE_MODE = 'off'; // 'off' | 'excel' | 'sheet'
-
-// Dán URL sau khi deploy Apps Script (chỉ cần khi SAVE_MODE = 'sheet').
-const SCORE_WEBHOOK_URL = null; // vd: 'https://script.google.com/macros/s/AKfycb.../exec'
-
-const XLSX_HEADERS = [
-  'Thời gian', 'Tên học sinh', 'Điểm', 'Tổng số câu', 'Phần trăm',
-  'Chi tiết theo nhóm (JSON)', 'Chi tiết bài làm (JSON)',
-];
-
-function payloadToRow(payload) {
-  return [
-    payload.timestamp,
-    payload.studentName,
-    payload.score,
-    payload.total,
-    payload.percent,
-    JSON.stringify(payload.groupStats),
-    JSON.stringify(payload.answers),
-  ];
-}
-
-// Tải kết quả 1 lượt làm bài về máy dưới dạng file Excel thật (.xlsx, dùng
-// thư viện SheetJS) — tránh lỗi font/encoding tiếng Việt hay gặp với file CSV.
-// Dùng làm phương án dự phòng khi không ghi trực tiếp được vào file có sẵn
-// (xem saveResultToExcel bên dưới).
-function downloadResultAsXlsx(payload) {
-  const ws = XLSX.utils.aoa_to_sheet([XLSX_HEADERS, payloadToRow(payload)]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Ket qua');
-
-  const safeName = (payload.studentName || 'hoc-sinh').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-');
-  const safeTime = payload.timestamp.slice(0, 19).replace(/[:T]/g, '-');
-  XLSX.writeFile(wb, `ket-qua-${safeName}-${safeTime}.xlsx`);
-}
-
-// ===== Ghi trực tiếp vào 1 file .xlsx có sẵn (File System Access API) =====
-// Chỉ Chrome/Edge hỗ trợ. Phù hợp khi nhiều học sinh dùng CHUNG 1 máy/trình
-// duyệt (vd máy tính lớp học) — chọn file 1 lần, các lần nộp bài sau tự động
-// ghi nối thêm dòng vào đúng file đó. Nếu mỗi học sinh dùng thiết bị riêng,
-// cách này KHÔNG gộp được dữ liệu giữa các máy — cần chuyển sang SAVE_MODE =
-// 'sheet' (Google Sheet) để có 1 nơi lưu tập trung thật sự.
-const IDB_NAME = 'pinyinquiz-fs';
-const IDB_STORE = 'handles';
-const RESULTS_FILE_HANDLE_KEY = 'resultsFileHandle';
-let resultsFileHandleCache = null;
-
-function supportsFileSystemAccess() {
-  return typeof window.showOpenFilePicker === 'function';
-}
-
-function idbOpen() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function idbGet(key) {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readonly');
-    const req = tx.objectStore(IDB_STORE).get(key);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function idbSet(key, value) {
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    tx.objectStore(IDB_STORE).put(value, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-// Lấy handle của file kết quả: dùng lại handle đã chọn từ lần trước (lưu
-// trong IndexedDB) nếu còn quyền ghi; nếu chưa có, yêu cầu người dùng chọn
-// file ket-qua-hoc-sinh.xlsx (chỉ hỏi 1 lần cho mỗi trình duyệt/máy).
-async function getResultsFileHandle() {
-  if (resultsFileHandleCache) return resultsFileHandleCache;
-
-  const saved = await idbGet(RESULTS_FILE_HANDLE_KEY);
-  if (saved) {
-    let perm = await saved.queryPermission({ mode: 'readwrite' });
-    if (perm !== 'granted') perm = await saved.requestPermission({ mode: 'readwrite' });
-    if (perm === 'granted') {
-      resultsFileHandleCache = saved;
-      return saved;
-    }
-  }
-
-  const [handle] = await window.showOpenFilePicker({
-    types: [{
-      description: 'Excel',
-      accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-    }],
-  });
-  const perm = await handle.requestPermission({ mode: 'readwrite' });
-  if (perm !== 'granted') throw new Error('Không được cấp quyền ghi file.');
-
-  await idbSet(RESULTS_FILE_HANDLE_KEY, handle);
-  resultsFileHandleCache = handle;
-  return handle;
-}
-
-async function appendResultToXlsxFile(handle, payload) {
-  const file = await handle.getFile();
-  const buffer = await file.arrayBuffer();
-
-  let rows;
-  if (buffer.byteLength > 0) {
-    const workbook = XLSX.read(buffer, { type: 'array' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
-    if (rows.length === 0) rows = [XLSX_HEADERS];
-  } else {
-    rows = [XLSX_HEADERS];
-  }
-  rows.push(payloadToRow(payload));
-
-  const newSheet = XLSX.utils.aoa_to_sheet(rows);
-  const newWorkbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(newWorkbook, newSheet, 'Ket qua');
-  const outBuffer = XLSX.write(newWorkbook, { type: 'array', bookType: 'xlsx' });
-
-  const writable = await handle.createWritable();
-  await writable.write(outBuffer);
-  await writable.close();
-}
-
-async function saveResultToExcel(payload) {
-  if (supportsFileSystemAccess()) {
-    try {
-      const handle = await getResultsFileHandle();
-      await appendResultToXlsxFile(handle, payload);
-      console.log('Đã ghi kết quả vào file Excel đã chọn.');
-      return;
-    } catch (err) {
-      console.error('Không ghi được vào file Excel có sẵn, tải file mới thay thế:', err);
-    }
-  }
-  downloadResultAsXlsx(payload);
-}
-
-function sendScoreToSheet(payload) {
-  if (!SCORE_WEBHOOK_URL) return;
-  fetch(SCORE_WEBHOOK_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-  }).catch((err) => console.error('Không gửi được điểm lên Google Sheet:', err));
-}
-
-// ===== Tốc độ =====
 function setSpeed(val, save) {
   currentSpeed = val;
   speedButtons.forEach((btn) => {
@@ -387,181 +313,94 @@ function initSpeed() {
 initSpeed();
 
 speedButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    setSpeed(parseFloat(btn.dataset.speed), true);
-  });
+  btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.speed), true));
 });
 
-// ===== Quiz flow =====
-startBtn.addEventListener('click', () => {
-  const name = studentNameInput.value.trim();
-  const studentClass = studentClassSelect.value;
+/* ===== 8. Tên học sinh + lớp (bắt buộc, đồng bộ với bài 2/3) ===== */
+function initStudentName() {
+  const savedName = localStorage.getItem('pinyinquiz_name');
+  if (savedName) els.studentNameInput.value = savedName;
+  const savedClass = localStorage.getItem('pinyinquiz_class');
+  if (savedClass) els.studentClassSelect.value = savedClass;
+}
+initStudentName();
 
-  if (!name) studentNameInput.classList.add('input-error');
-  if (!studentClass) studentClassSelect.classList.add('input-error');
+els.studentNameInput.addEventListener('input', () => els.studentNameInput.classList.remove('input-error'));
+els.studentClassSelect.addEventListener('change', () => els.studentClassSelect.classList.remove('input-error'));
+
+els.startBtn.addEventListener('click', () => {
+  const name = els.studentNameInput.value.trim();
+  const studentClass = els.studentClassSelect.value;
+
+  if (!name) els.studentNameInput.classList.add('input-error');
+  if (!studentClass) els.studentClassSelect.classList.add('input-error');
   if (!name || !studentClass) {
-    (!name ? studentNameInput : studentClassSelect).focus();
+    (!name ? els.studentNameInput : els.studentClassSelect).focus();
     return;
   }
 
-  studentNameInput.classList.remove('input-error');
-  studentClassSelect.classList.remove('input-error');
+  els.studentNameInput.classList.remove('input-error');
+  els.studentClassSelect.classList.remove('input-error');
   currentStudentName = name;
   currentStudentClass = studentClass;
   localStorage.setItem('pinyinquiz_name', name);
   localStorage.setItem('pinyinquiz_class', studentClass);
 
-  questions = buildAllQuestions();
-  currentIndex = 0;
-  score = 0;
-  answerLog = [];
-  groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
-  startScreen.classList.add('hidden');
-  resultScreen.classList.add('hidden');
-  quizScreen.classList.remove('hidden');
-  renderQuestion();
+  quizStarted = true;
+  els.startScreen.style.display = 'none';
+  els.app.style.display = 'block';
+  shuffleDeck();
+  renderQuestion(true);
 });
 
-restartBtn.addEventListener('click', () => {
-  resultScreen.classList.add('hidden');
-  startScreen.classList.remove('hidden');
-});
+/* ===== 9. Lưu kết quả (giống bài 2/3 — đang tắt, đổi SAVE_MODE khi cần dùng) ===== */
+const SAVE_MODE = 'off'; // 'off' | 'excel' | 'sheet'
+const SCORE_WEBHOOK_URL = null;
 
-playBtn.addEventListener('click', () => {
-  const q = questions[currentIndex];
-  playQuestionAudio(q);
-});
+const XLSX_HEADERS = [
+  'Thời gian', 'Tên học sinh', 'Lớp', 'Dạng câu hỏi', 'Điểm', 'Tổng số câu', 'Phần trăm',
+  'Chi tiết theo nhóm (JSON)', 'Chi tiết bài làm (JSON)',
+];
 
-nextBtn.addEventListener('click', () => {
-  currentIndex++;
-  if (currentIndex >= questions.length) {
-    showResults();
-  } else {
-    renderQuestion();
-  }
-});
-
-// Hiện gợi ý pinyin: phần đã biết + 1 chỗ trống ở vị trí đang hỏi (phụ âm đầu
-// hoặc dấu thanh). Từ 2 âm tiết không có gợi ý vì cả cụm pinyin đang được hỏi.
-function renderPinyinHint(q) {
-  pinyinHint.innerHTML = '';
-  if (!q.hintKnown) {
-    pinyinHint.classList.add('hidden');
-    return;
-  }
-  pinyinHint.classList.remove('hidden');
-
-  if (q.hintType === 'tone') {
-    pinyinHint.classList.add('hint-tone');
-    const blank = document.createElement('div');
-    blank.className = 'hint-blank-line';
-    const known = document.createElement('div');
-    known.className = 'hint-known';
-    known.textContent = q.hintKnown;
-    pinyinHint.append(blank, known);
-  } else {
-    pinyinHint.classList.remove('hint-tone');
-    const blank = document.createElement('span');
-    blank.className = 'hint-blank-inline';
-    const known = document.createElement('span');
-    known.className = 'hint-known';
-    known.textContent = q.hintKnown;
-    pinyinHint.append(blank, known);
-  }
+function payloadToRow(payload) {
+  return [
+    payload.timestamp, payload.studentName, payload.studentClass, payload.modeLabel,
+    payload.score, payload.total, payload.percent,
+    JSON.stringify(payload.groupStats), JSON.stringify(payload.answers),
+  ];
 }
 
-function renderQuestion() {
-  answered = false;
-  const q = questions[currentIndex];
-  progressText.textContent = `Câu ${currentIndex + 1} / ${questions.length}`;
-  progressBar.style.width = `${(currentIndex / questions.length) * 100}%`;
-  scoreLive.textContent = `Điểm: ${score}`;
-  feedback.textContent = '';
-  feedback.className = 'feedback';
-  nextBtn.classList.add('hidden');
-
-  hanziChar.textContent = q.hanzi;
-  renderPinyinHint(q);
-
-  optionsContainer.innerHTML = '';
-  q.options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.textContent = opt;
-    btn.addEventListener('click', () => selectOption(opt, btn));
-    optionsContainer.appendChild(btn);
-  });
-
-  setTimeout(() => playQuestionAudio(q), 150);
+function downloadResultAsXlsx(payload) {
+  const ws = XLSX.utils.aoa_to_sheet([XLSX_HEADERS, payloadToRow(payload)]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ket qua');
+  const safeName = (payload.studentName || 'hoc-sinh').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-');
+  const safeTime = payload.timestamp.slice(0, 19).replace(/[:T]/g, '-');
+  XLSX.writeFile(wb, `ket-qua-${safeName}-${safeTime}.xlsx`);
 }
 
-function selectOption(opt, btnEl) {
-  if (answered) return;
-  answered = true;
-  const q = questions[currentIndex];
-  const isCorrect = opt === q.correct;
-
-  groupStats[q.group].total++;
-  if (isCorrect) {
-    groupStats[q.group].correct++;
-    score++;
-  }
-
-  answerLog.push({
-    id: q.id,
-    hanzi: q.hanzi,
-    type: q.type,
-    hint: q.hintKnown || '',
-    correct: q.correct,
-    selected: opt,
-    isCorrect,
-  });
-
-  Array.from(optionsContainer.children).forEach(btn => {
-    btn.disabled = true;
-    if (btn.textContent === q.correct) btn.classList.add('correct');
-    else if (btn === btnEl) btn.classList.add('incorrect');
-  });
-
-  feedback.textContent = isCorrect
-    ? '✅ Chính xác!'
-    : `❌ Sai rồi. Đáp án đúng: ${q.correct}`;
-  feedback.className = 'feedback ' + (isCorrect ? 'ok' : 'bad');
-  scoreLive.textContent = `Điểm: ${score}`;
-  nextBtn.classList.remove('hidden');
-  nextBtn.textContent = currentIndex + 1 >= questions.length ? 'Xem kết quả →' : 'Câu tiếp theo →';
+function sendScoreToSheet(payload) {
+  if (!SCORE_WEBHOOK_URL) return;
+  fetch(SCORE_WEBHOOK_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  }).catch((err) => console.error('Không gửi được điểm lên Google Sheet:', err));
 }
 
-function showResults() {
-  quizScreen.classList.add('hidden');
-  resultScreen.classList.remove('hidden');
-  const pct = Math.round((score / questions.length) * 100);
-  resultScore.textContent = `${score} / ${questions.length} (${pct}%)`;
-
-  const label = { bpmf: 'b p m f', dtnl: 'd t n l', gkh: 'g k h' };
-  resultBreakdown.innerHTML = '';
-  ['bpmf', 'dtnl', 'gkh'].forEach(g => {
-    const s = groupStats[g];
-    const p = s.total ? Math.round((s.correct / s.total) * 100) : 0;
-    const row = document.createElement('div');
-    row.className = 'breakdown-row';
-    row.textContent = `Nhóm ${label[g]}: ${s.correct}/${s.total} (${p}%)`;
-    resultBreakdown.appendChild(row);
-  });
-
+function saveResult() {
   const payload = {
     studentName: currentStudentName,
+    studentClass: currentStudentClass,
+    modeLabel: MODE_CONFIG[mode].vn,
     score,
-    total: questions.length,
-    percent: pct,
+    total: availableData.length,
+    percent: Math.round((score / availableData.length) * 100),
     groupStats,
     answers: answerLog,
     timestamp: new Date().toISOString(),
   };
 
-  if (SAVE_MODE === 'sheet') {
-    sendScoreToSheet(payload);
-  } else if (SAVE_MODE === 'excel') {
-    saveResultToExcel(payload);
-  }
+  if (SAVE_MODE === 'sheet') sendScoreToSheet(payload);
+  else if (SAVE_MODE === 'excel') downloadResultAsXlsx(payload);
 }

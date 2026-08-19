@@ -32,7 +32,7 @@ function toDataItem(item) {
   const restAfterInitial = item.pinyin.slice(initial.length);
   const offset = accent.index - initial.length;
   const final = restAfterInitial.slice(0, offset) + accent.base + restAfterInitial.slice(offset + 1);
-  return { h: item.hanzi, i: initial, f: final, t: accent.tone, id: item.id, group: item.group };
+  return { h: item.hanzi, i: initial, f: final, t: accent.tone, id: item.id, group: item.group, meaning: item.meaning };
 }
 
 const DATA = SINGLES.map(toDataItem);
@@ -191,8 +191,8 @@ function selectAnswer(btn, opt) {
 
   const fullPinyin = pinyin(item.i, item.f, item.t);
   els.feedback.textContent = isCorrect
-    ? `✓ Chính xác — ${item.h} (${fullPinyin})`
-    : `✗ Chưa đúng — đáp án đúng: ${cfg.optFmt(currentAnswer.correct)} — ${item.h} (${fullPinyin})`;
+    ? `✓ Chính xác — ${item.h} (${fullPinyin}) — ${item.meaning}`
+    : `✗ Chưa đúng — đáp án đúng: ${cfg.optFmt(currentAnswer.correct)} — ${item.h} (${fullPinyin}) — ${item.meaning}`;
   els.feedback.className = 'feedback ' + (isCorrect ? 'ok' : 'no');
   els.scoreText.textContent = `Đúng: ${score}`;
   els.nextBtn.classList.add('show');
