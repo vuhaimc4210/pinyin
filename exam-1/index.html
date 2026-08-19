@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Luyện Nghe Phát Âm j q x — 声母韵母声调</title>
+<title>Luyện Nghe Phát Âm b p m f · d t n l · g k h — 声母韵母声调</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
@@ -174,16 +174,11 @@
     border-radius:99px;font-weight:700;font-size:14px;cursor:pointer;
   }
 
-  footer{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:30px;line-height:1.6;}
   @media (max-width:420px){
     .options{grid-template-columns:1fr;max-width:280px;}
     .tabs{grid-template-columns:repeat(2,1fr);}
   }
 
-  /* ===== Bổ sung riêng cho bài 2 (không có trong web-sample gốc) =====
-     - Thanh liên kết giữa các bài học.
-     - Nút chọn tốc độ 2 mức (thay cho thanh trượt + chọn giọng TTS đã bỏ).
-     - Ô nhập tên + chọn lớp trước khi vào bài (đồng bộ với bài 1). */
   .lesson-nav-mini{
     display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:700;margin-bottom:14px;
   }
@@ -221,18 +216,18 @@
 
   <div class="lesson-nav-mini">
     <a href="../index.html">Bài 1<br>b p m f · d t n l · g k h</a>
-    <a href="../exam-1/index.html">Bài 1.1<br>b p m f · d t n l · g k h (bộ 2)</a>
-    <span class="current">Bài 2<br>Ôn tập j q x</span>
+    <span class="current">Bài 1.1<br>b p m f · d t n l · g k h (bộ 2)</span>
+    <a href="../exam-2/index.html">Bài 2<br>Ôn tập j q x</a>
     <a href="../exam-3/index.html">Bài 3<br>z c s zh ch sh r</a>
   </div>
 
   <header>
     <div class="title-block">
       <div class="eyebrow">听力练习 · Luyện nghe</div>
-      <h1>Luyện <span class="cn">j q x</span></h1>
-      <div class="scope">Thanh mẫu: j q x — Vận mẫu: ia ie iao iu(iou) ian in iang ing iong — 4 thanh điệu</div>
+      <h1>Luyện <span class="cn">b p m f · d t n l · g k h</span></h1>
+      <div class="scope">Thanh mẫu: b p m f · d t n l · g k h — Vận mẫu: a o e i u ü ai ei ao ou — 4 thanh điệu</div>
     </div>
-    <div class="stamp">20<b>TỪ</b></div>
+    <div class="stamp">30<b>TỪ</b></div>
   </header>
 
   <div class="panel">
@@ -273,7 +268,7 @@
 
   <div id="app" style="display:none;">
     <div class="progress-line">
-      <span id="progressText">Câu 1 / 20</span>
+      <span id="progressText">Câu 1 / 30</span>
       <span id="scoreText">Đúng: 0</span>
     </div>
     <div class="bar"><div class="bar-fill" id="barFill" style="width:1%"></div></div>
@@ -296,15 +291,16 @@
 
   <div id="endScreen" style="display:none;">
     <div class="end-card">
-      <div class="big" id="finalScore">0 / 20</div>
+      <div class="big" id="finalScore">0 / 30</div>
       <p id="endLabel">Số câu trả lời đúng trong lượt luyện này</p>
       <button class="restart-btn" id="restartBtn" type="button">Làm lại từ đầu</button>
     </div>
   </div>
+
 </div>
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="data.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
