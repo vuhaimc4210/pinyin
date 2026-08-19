@@ -1,8 +1,8 @@
-// Dữ liệu bài 2 (ôn tập j q x): 20 từ, độc lập hoàn toàn — không tham chiếu
-// chéo sang thư mục nào khác.
+// Dữ liệu bài tập bổ sung (exam-2): 20 từ, nhóm thanh mẫu j, q, x
+// Giống data.js gốc: giữ nguyên `pinyin` dạng chuỗi có sẵn (không tách initial/final/tone).
 // group: 'jqx' -> cả bộ chỉ có 1 nhóm thanh mẫu nên đáp án nhiễu lấy trong chính bộ này.
-// id: khoá cố định, TRÙNG với tên file audio (audio/<id>.mp3, tính từ thư mục exam-2/ này).
-//     KHÔNG đổi id của item đã có, nếu không sẽ mất liên kết với file audio.
+// id: khoá cố định, TRÙNG với tên file audio đã tải sẵn (audio/<id>.mp3, tính từ thư mục exam-2/).
+//     KHÔNG đổi id của item đã có, nếu không sẽ mất liên kết với file audio đã tải.
 
 const SINGLES = [
   // ===== Thanh mẫu j =====
@@ -32,8 +32,11 @@ const SINGLES = [
   { id: '20.消', hanzi: '消', pinyin: 'xiāo', group: 'jqx' },
 ];
 
+// Bộ exam-2 hiện chưa có từ 2 âm tiết riêng, để mảng rỗng cho đúng cấu trúc.
+const DOUBLES = [];
+
 // Cho phép tools/fetch-audio.js (chạy bằng Node.js) require() được file này.
 // Trên trình duyệt, biến `module` không tồn tại nên đoạn này tự động bỏ qua, không ảnh hưởng app.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SINGLES: SINGLES };
+  module.exports = { SINGLES: SINGLES, DOUBLES: DOUBLES };
 }

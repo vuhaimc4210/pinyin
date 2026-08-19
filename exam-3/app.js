@@ -1,7 +1,7 @@
-/* ===== 1. Tách pinyin có dấu của exam-2 (SINGLES) thành initial/final/tone =====
+/* ===== 1. Tách pinyin có dấu của data.js (SINGLES) thành initial/final/tone =====
    Dùng 1 lần khi nạp trang để chuyển dữ liệu gốc (id/hanzi/pinyin) sang dạng
    {h,i,f,t,id} — giống cấu trúc DATA của web-sample — mà không phải chép tay
-   lại 20 từ (giữ đúng 1 nguồn dữ liệu duy nhất: exam-2/data.js). */
+   lại 20 từ theo initial/final/tone. */
 const VOWEL_MARKS = {
   'a': ['a', 'ā', 'á', 'ǎ', 'à'],
   'o': ['o', 'ō', 'ó', 'ǒ', 'ò'],
@@ -10,7 +10,9 @@ const VOWEL_MARKS = {
   'u': ['u', 'ū', 'ú', 'ǔ', 'ù'],
   'ü': ['ü', 'ǖ', 'ǘ', 'ǚ', 'ǜ'],
 };
-const INITIALS = ['j', 'q', 'x'];
+// Thứ tự quan trọng: thanh mẫu 2 chữ cái (zh/ch/sh) phải đứng TRƯỚC thanh mẫu
+// 1 chữ cái tương ứng (z/c/s), nếu không "zhēng" sẽ bị nhận nhầm thành z + "hēng".
+const INITIALS = ['zh', 'ch', 'sh', 'z', 'c', 's', 'r'];
 
 function findAccentedVowel(pinyin) {
   for (let idx = 0; idx < pinyin.length; idx++) {
@@ -23,36 +25,34 @@ function findAccentedVowel(pinyin) {
   return null;
 }
 
-// "jiǎo" -> { h:'脚', i:'j', f:'iao', t:3, id:'2.脚' }. Quy ước "iou" là tên
-// chuẩn của vận mẫu viết tắt "iu" sau j/q/x (khớp với FINAL_TONES bên dưới).
+// "zhái" -> { h:'宅', i:'zh', f:'ai', t:2, id:'11.宅' }.
 function toDataItem(item) {
   const initial = INITIALS.find(x => item.pinyin.startsWith(x));
   const accent = findAccentedVowel(item.pinyin);
   const restAfterInitial = item.pinyin.slice(initial.length);
   const offset = accent.index - initial.length;
-  const spelledFinal = restAfterInitial.slice(0, offset) + accent.base + restAfterInitial.slice(offset + 1);
-  const canonicalFinal = spelledFinal === 'iu' ? 'iou' : spelledFinal;
-  return { h: item.hanzi, i: initial, f: canonicalFinal, t: accent.tone, id: item.id };
+  const final = restAfterInitial.slice(0, offset) + accent.base + restAfterInitial.slice(offset + 1);
+  return { h: item.hanzi, i: initial, f: final, t: accent.tone, id: item.id, group: item.group };
 }
 
 const DATA = SINGLES.map(toDataItem);
 
 /* ===== 2. Bảng dấu thanh điệu theo vận mẫu (copy từ web-sample) ===== */
 const FINAL_TONES = {
-  ia:   ['iā','iá','iǎ','ià'],
-  ie:   ['iē','ié','iě','iè'],
-  iao:  ['iāo','iáo','iǎo','iào'],
-  iou:  ['iū','iú','iǔ','iù'],      // viết chuẩn là "iu"
-  ian:  ['iān','ián','iǎn','iàn'],
-  in:   ['īn','ín','ǐn','ìn'],
-  iang: ['iāng','iáng','iǎng','iàng'],
-  ing:  ['īng','íng','ǐng','ìng'],
-  iong: ['iōng','ióng','iǒng','iòng'],
+  ai:  ['āi', 'ái', 'ǎi', 'ài'],
+  ao:  ['āo', 'áo', 'ǎo', 'ào'],
+  ang: ['āng', 'áng', 'ǎng', 'àng'],
+  e:   ['ē', 'é', 'ě', 'è'],
+  en:  ['ēn', 'én', 'ěn', 'èn'],
+  eng: ['ēng', 'éng', 'ěng', 'èng'],
+  i:   ['ī', 'í', 'ǐ', 'ì'],
+  ong: ['ōng', 'óng', 'ǒng', 'òng'],
+  ou:  ['ōu', 'óu', 'ǒu', 'òu'],
 };
-const FINAL_LIST = ['ia','ie','iao','iou','ian','in','iang','ing','iong'];
-const FINAL_LABEL = {ia:'ia',ie:'ie',iao:'iao',iou:'iu',ian:'ian',in:'in',iang:'iang',ing:'ing',iong:'iong'};
-const INITIAL_CONFUSE_POOL = ['j','q','x','g','k','h','z','c','s'];
-const TONE_MARKS = ['ˉ','ˊ','ˇ','ˋ'];
+const FINAL_LIST = ['ai', 'ao', 'ang', 'e', 'en', 'eng', 'i', 'ong', 'ou'];
+const FINAL_LABEL = { ai: 'ai', ao: 'ao', ang: 'ang', e: 'e', en: 'en', eng: 'eng', i: 'i', ong: 'ong', ou: 'ou' };
+const INITIAL_CONFUSE_POOL = ['j', 'q', 'x', 'g', 'k', 'h'];
+const TONE_MARKS = ['ˉ', 'ˊ', 'ˇ', 'ˋ'];
 
 function pinyin(initial, final, tone) {
   return initial + FINAL_TONES[final][tone - 1];
@@ -111,12 +111,12 @@ let availableData = [];
 let currentStudentName = '';
 let currentStudentClass = '';
 let answerLog = [];
-let groupStats = { jqx: { correct: 0, total: 0 } };
+let groupStats = { zcs: { correct: 0, total: 0 }, zhchshr: { correct: 0, total: 0 } };
 
 function shuffleDeck() {
   order = availableData.map((_, i) => i).sort(() => Math.random() - 0.5);
   idx = 0; score = 0; answered = false; answerLog = [];
-  groupStats = { jqx: { correct: 0, total: 0 } };
+  groupStats = { zcs: { correct: 0, total: 0 }, zhchshr: { correct: 0, total: 0 } };
 }
 
 const els = {
@@ -178,8 +178,9 @@ function selectAnswer(btn, opt) {
   const isCorrect = opt === currentAnswer.correct;
   if (isCorrect) score++;
 
-  groupStats.jqx.total++;
-  if (isCorrect) groupStats.jqx.correct++;
+  const item = currentAnswer.item;
+  groupStats[item.group].total++;
+  if (isCorrect) groupStats[item.group].correct++;
 
   document.querySelectorAll('.opt').forEach(b => { b.disabled = true; });
   const cfg = currentAnswer.cfg;
@@ -188,7 +189,6 @@ function selectAnswer(btn, opt) {
     else if (b === btn) b.classList.add('wrong');
   });
 
-  const item = currentAnswer.item;
   const fullPinyin = pinyin(item.i, item.f, item.t);
   els.feedback.textContent = isCorrect
     ? `✓ Chính xác — ${item.h} (${fullPinyin})`
@@ -240,8 +240,8 @@ document.querySelectorAll('.tab').forEach(tab => {
   };
 });
 
-/* ===== 6. Phát audio (dùng file ghi âm gốc của bài 2, không TTS) ===== */
-const AUDIO_DIR = '../exam-2/audio/';
+/* ===== 6. Phát audio (dùng file ghi âm gốc, không TTS) ===== */
+const AUDIO_DIR = 'audio/';
 let currentSpeed = 1;
 let currentAudioEl = null;
 
