@@ -1,8 +1,8 @@
 // Không phải file chạy trên web — đây là mã nguồn để DÁN vào Apps Script của
 // Google Sheet (Tiện ích mở rộng > Apps Script), sau khi đã import file
 // ket-qua-hoc-sinh.xlsx vào Sheet đó (giữ nguyên dòng tiêu đề: Thời gian,
-// Tên, Tên bài, Phần, Số điểm, Tổng số câu). Xem hướng dẫn triển khai đầy đủ
-// trong config.js cùng thư mục.
+// Tên, Lớp, Tên bài, Phần, Số điểm, Tổng số câu). Xem hướng dẫn triển khai
+// đầy đủ trong config.js cùng thư mục.
 
 // Phải khớp TEACHER_CODE trong teacher-review.js — chặn ai gọi doGet mà
 // không có mật khẩu giáo viên.
@@ -19,6 +19,7 @@ function doPost(e) {
   sheet.appendRow([
     data.timestamp,
     data.studentName,
+    data.studentClass,
     data.examName,
     data.modeLabel,
     data.score,
@@ -42,10 +43,11 @@ function doGet(e) {
   const result = body.map((row) => ({
     timestamp: row[0],
     studentName: row[1],
-    examName: row[2],
-    part: row[3],
-    score: row[4],
-    total: row[5],
+    studentClass: row[2],
+    examName: row[3],
+    part: row[4],
+    score: row[5],
+    total: row[6],
   }));
 
   return ContentService.createTextOutput(JSON.stringify(result))

@@ -358,12 +358,29 @@ els.startBtn.addEventListener('click', () => {
 const SAVE_MODE = 'sheet'; // 'off' | 'excel' | 'sheet' — URL lấy từ config.js
 const EXAM_NAME = 'Bài 3';
 
-const XLSX_HEADERS = ['Thời gian', 'Tên', 'Tên bài', 'Phần', 'Số điểm', 'Tổng số câu'];
+const XLSX_HEADERS = ['Thời gian', 'Tên', 'Lớp', 'Tên bài', 'Phần', 'Số điểm', 'Tổng số câu'];
+
+// new Date().toISOString() trả về giờ UTC (hậu tố "Z") — Google Sheet chỉ
+// lưu nguyên chuỗi, không tự quy đổi múi giờ, nên phải tự cộng +7 (giờ Việt
+// Nam, không có giờ mùa hè) rồi format thành "YYYY-MM-DD HH-mm-ss".
+function vnTimestamp() {
+  const pad = (n) => String(n).padStart(2, '0');
+  const vn = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const date = `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}`;
+  const time = `${pad(vn.getUTCHours())}-${pad(vn.getUTCMinutes())}-${pad(vn.getUTCSeconds())}`;
+  return `${date} ${time}`;
+}
+
+// Chuẩn hoá tên trước khi lưu: viết thường toàn bộ rồi viết hoa chữ cái đầu
+// mỗi từ (vd "NGUYỄN văn a" -> "Nguyễn Văn A").
+function toTitleCase(name) {
+  return name.toLowerCase().split(' ').map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w)).join(' ');
+}
 
 function payloadToRow(payload) {
   return [
-    payload.timestamp, payload.studentName, payload.examName, payload.modeLabel,
-    payload.score, payload.total,
+    payload.timestamp, payload.studentName, payload.studentClass, payload.examName,
+    payload.modeLabel, payload.score, payload.total,
   ];
 }
 
@@ -387,7 +404,7 @@ function sendScoreToSheet(payload) {
 
 function saveResult() {
   const payload = {
-    studentName: currentStudentName,
+    studentName: toTitleCase(currentStudentName),
     studentClass: currentStudentClass,
     examName: EXAM_NAME,
     modeLabel: MODE_CONFIG[mode].vn,
@@ -396,7 +413,7 @@ function saveResult() {
     percent: Math.round((score / availableData.length) * 100),
     groupStats,
     answers: answerLog,
-    timestamp: new Date().toISOString(),
+    timestamp: vnTimestamp(),
   };
 
   if (SAVE_MODE === 'sheet') sendScoreToSheet(payload);
