@@ -174,6 +174,32 @@
     border-radius:99px;font-weight:700;font-size:14px;cursor:pointer;
   }
 
+  .leaderboard{text-align:left;margin:22px 0;}
+  .leaderboard .section-title{
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);font-weight:700;margin:0 0 10px;
+  }
+  .leaderboard .word-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .leaderboard .word-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 12px;border-radius:9px;background:rgba(255,255,255,.06);
+    font-size:13.5px;color:var(--paper);
+  }
+  .leaderboard .word-row.mine{
+    background:rgba(176,141,62,.18);outline:1.5px solid var(--gold);
+  }
+  .leaderboard .badge{
+    font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;
+    background:var(--jade);color:#fff;white-space:nowrap;
+  }
+  .leaderboard .note{font-size:12.5px;color:#cfc6ad;}
+  .leaderboard .loading{display:flex;align-items:center;gap:8px;}
+  .spinner{
+    width:14px;height:14px;flex-shrink:0;border:2px solid rgba(255,255,255,.25);
+    border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
   @media (max-width:420px){
     .options{grid-template-columns:1fr;max-width:280px;}
     .tabs{grid-template-columns:repeat(2,1fr);}
@@ -292,6 +318,7 @@
     <div class="end-card">
       <div class="big" id="finalScore">0 / 30</div>
       <p id="endLabel">Số câu trả lời đúng trong lượt luyện này</p>
+      <div id="leaderboard" class="leaderboard hidden"></div>
       <button class="restart-btn" id="restartBtn" type="button">Làm lại từ đầu</button>
     </div>
   </div>

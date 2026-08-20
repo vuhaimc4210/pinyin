@@ -140,6 +140,7 @@ const els = {
   endScreen: document.getElementById('endScreen'),
   finalScore: document.getElementById('finalScore'),
   endLabel: document.getElementById('endLabel'),
+  leaderboard: document.getElementById('leaderboard'),
   restartBtn: document.getElementById('restartBtn'),
 };
 
@@ -214,7 +215,8 @@ function showEnd() {
   els.endScreen.style.display = 'block';
   els.finalScore.textContent = `${score} / ${availableData.length}`;
   els.endLabel.textContent = `Số câu trả lời đúng trong lượt luyện "${MODE_CONFIG[mode].vn}" này`;
-  saveResult();
+  const payload = saveResult();
+  loadLeaderboard(payload);
 }
 
 els.restartBtn.onclick = () => {
@@ -425,4 +427,80 @@ function saveResult() {
 
   if (SAVE_MODE === 'sheet') sendScoreToSheet(payload);
   else if (SAVE_MODE === 'excel') downloadResultAsXlsx(payload);
+
+  return payload;
+}
+
+// Bảng xếp hạng top 3 cho đúng Bài + Phần vừa làm, hiện trên màn hình kết
+// quả — gọi công khai tới Apps Script (?action=top), không cần mật khẩu.
+async function loadLeaderboard(payload) {
+  if (!els.leaderboard) return;
+  if (!GOOGLE_SHEET_WEBHOOK_URL) { els.leaderboard.classList.add('hidden'); return; }
+
+  els.leaderboard.classList.remove('hidden');
+  // Apps Script trả kết quả qua 2 lần redirect nên có thể mất vài giây —
+  // hiện chữ "Đang tải" để không nhìn giống như bị lỗi/trống trong lúc chờ.
+  els.leaderboard.innerHTML = '<p class="note loading"><span class="spinner"></span>Đang tải bảng xếp hạng...</p>';
+
+  try {
+    const url = `${GOOGLE_SHEET_WEBHOOK_URL}?action=top` +
+      `&exam=${encodeURIComponent(payload.examName)}&part=${encodeURIComponent(payload.modeLabel)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const top = await res.json();
+    renderLeaderboard(top, payload);
+  } catch (err) {
+    els.leaderboard.classList.add('hidden');
+    console.error('Không tải được bảng xếp hạng:', err);
+  }
+}
+
+function renderLeaderboard(top, payload) {
+  els.leaderboard.innerHTML = '';
+  const medals = ['🥇', '🥈', '🥉'];
+
+  const title = document.createElement('p');
+  title.className = 'section-title';
+  title.textContent = `Top 3 — ${payload.examName} · ${payload.modeLabel}`;
+  els.leaderboard.appendChild(title);
+
+  const list = document.createElement('div');
+  list.className = 'word-list';
+  if (top.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'note';
+    empty.textContent = 'Chưa có dữ liệu.';
+    list.appendChild(empty);
+  } else {
+    top.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'word-row';
+      const info = document.createElement('span');
+      info.textContent = `${medals[i] || `#${i + 1}`} ${r.studentName} (${r.studentClass})`;
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-correct';
+      badge.textContent = `${r.score}/${r.total}`;
+      row.append(info, badge);
+      list.appendChild(row);
+    });
+  }
+  els.leaderboard.appendChild(list);
+
+  const mineTitle = document.createElement('p');
+  mineTitle.className = 'section-title';
+  mineTitle.textContent = 'Kết quả của bạn';
+  els.leaderboard.appendChild(mineTitle);
+
+  const mineList = document.createElement('div');
+  mineList.className = 'word-list';
+  const mineRow = document.createElement('div');
+  mineRow.className = 'word-row mine';
+  const mineInfo = document.createElement('span');
+  mineInfo.textContent = `📍 ${payload.studentName} (${payload.studentClass})`;
+  const mineBadge = document.createElement('span');
+  mineBadge.className = 'badge badge-correct';
+  mineBadge.textContent = `${payload.score}/${payload.total}`;
+  mineRow.append(mineInfo, mineBadge);
+  mineList.appendChild(mineRow);
+  els.leaderboard.appendChild(mineList);
 }
