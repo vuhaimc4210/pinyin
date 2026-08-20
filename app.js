@@ -111,11 +111,13 @@ let currentStudentName = '';
 let currentStudentClass = '';
 let answerLog = [];
 let groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
+let quizStartMs = 0;
 
 function shuffleDeck() {
   order = availableData.map((_, i) => i).sort(() => Math.random() - 0.5);
   idx = 0; score = 0; answered = false; answerLog = [];
   groupStats = { bpmf: { correct: 0, total: 0 }, dtnl: { correct: 0, total: 0 }, gkh: { correct: 0, total: 0 } };
+  quizStartMs = Date.now();
 }
 
 const els = {
@@ -357,14 +359,17 @@ els.startBtn.addEventListener('click', () => {
 const SAVE_MODE = 'sheet'; // 'off' | 'excel' | 'sheet' — URL lấy từ config.js
 const EXAM_NAME = 'Bài 1';
 
-const XLSX_HEADERS = ['Thời gian', 'Tên', 'Lớp', 'Tên bài', 'Phần', 'Số điểm', 'Tổng số câu'];
+const XLSX_HEADERS = [
+  'Thời gian bắt đầu', 'Tên', 'Lớp', 'Tên bài', 'Phần', 'Số điểm', 'Tổng số câu',
+  'Thời gian kết thúc', 'Tổng thời gian (phút)',
+];
 
 // new Date().toISOString() trả về giờ UTC (hậu tố "Z") — Google Sheet chỉ
 // lưu nguyên chuỗi, không tự quy đổi múi giờ, nên phải tự cộng +7 (giờ Việt
 // Nam, không có giờ mùa hè) rồi format thành "YYYY-MM-DD HH:mm:ss".
-function vnTimestamp() {
+function vnTimestamp(ms = Date.now()) {
   const pad = (n) => String(n).padStart(2, '0');
-  const vn = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const vn = new Date(ms + 7 * 60 * 60 * 1000);
   const date = `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}`;
   const time = `${pad(vn.getUTCHours())}:${pad(vn.getUTCMinutes())}:${pad(vn.getUTCSeconds())}`;
   return `${date} ${time}`;
@@ -378,8 +383,8 @@ function toTitleCase(name) {
 
 function payloadToRow(payload) {
   return [
-    payload.timestamp, payload.studentName, payload.studentClass, payload.examName,
-    payload.modeLabel, payload.score, payload.total,
+    payload.startTime, payload.studentName, payload.studentClass, payload.examName,
+    payload.modeLabel, payload.score, payload.total, payload.timestamp, payload.durationMinutes,
   ];
 }
 
@@ -402,6 +407,7 @@ function sendScoreToSheet(payload) {
 }
 
 function saveResult() {
+  const endMs = Date.now();
   const payload = {
     studentName: toTitleCase(currentStudentName),
     studentClass: currentStudentClass,
@@ -412,7 +418,9 @@ function saveResult() {
     percent: Math.round((score / availableData.length) * 100),
     groupStats,
     answers: answerLog,
-    timestamp: vnTimestamp(),
+    startTime: vnTimestamp(quizStartMs),
+    timestamp: vnTimestamp(endMs),
+    durationMinutes: Math.round(((endMs - quizStartMs) / 60000) * 10) / 10,
   };
 
   if (SAVE_MODE === 'sheet') sendScoreToSheet(payload);

@@ -1,8 +1,9 @@
 // Không phải file chạy trên web — đây là mã nguồn để DÁN vào Apps Script của
 // Google Sheet (Tiện ích mở rộng > Apps Script), sau khi đã import file
-// ket-qua-hoc-sinh.xlsx vào Sheet đó (giữ nguyên dòng tiêu đề: Thời gian,
-// Tên, Lớp, Tên bài, Phần, Số điểm, Tổng số câu). Xem hướng dẫn triển khai
-// đầy đủ trong config.js cùng thư mục.
+// ket-qua-hoc-sinh.xlsx vào Sheet đó (giữ nguyên dòng tiêu đề: Thời gian bắt
+// đầu, Tên, Lớp, Tên bài, Phần, Số điểm, Tổng số câu, Thời gian kết thúc,
+// Tổng thời gian (phút)). Xem hướng dẫn triển khai đầy đủ trong config.js
+// cùng thư mục.
 
 // Phải khớp TEACHER_CODE trong teacher-review.js — chặn ai gọi doGet mà
 // không có mật khẩu giáo viên.
@@ -17,13 +18,15 @@ function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   sheet.appendRow([
-    data.timestamp,
+    data.startTime,
     data.studentName,
     data.studentClass,
     data.examName,
     data.modeLabel,
     data.score,
     data.total,
+    data.timestamp,
+    data.durationMinutes,
   ]);
   return ContentService.createTextOutput(JSON.stringify({ ok: true }))
     .setMimeType(ContentService.MimeType.JSON);
@@ -41,13 +44,15 @@ function doGet(e) {
   const rows = sheet.getDataRange().getValues();
   const body = rows.slice(1).filter((row) => row[0]);
   const result = body.map((row) => ({
-    timestamp: row[0],
+    startTime: row[0],
     studentName: row[1],
     studentClass: row[2],
     examName: row[3],
     part: row[4],
     score: row[5],
     total: row[6],
+    timestamp: row[7],
+    durationMinutes: row[8],
   }));
 
   return ContentService.createTextOutput(JSON.stringify(result))

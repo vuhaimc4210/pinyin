@@ -77,19 +77,21 @@ async function loadFromExcel() {
 }
 
 // File có 1 dòng tiêu đề + nhiều dòng kết quả (mỗi dòng = 1 lượt làm bài, gộp
-// từ các file .xlsx học sinh tải về). Cột: Thời gian, Tên, Lớp, Tên bài,
-// Phần, Số điểm, Tổng số câu.
+// từ các file .xlsx học sinh tải về). Cột: Thời gian bắt đầu, Tên, Lớp, Tên
+// bài, Phần, Số điểm, Tổng số câu, Thời gian kết thúc, Tổng thời gian (phút).
 function rowsToSubmissions(rows) {
   return rows.slice(1).filter((r) => r.length > 0 && r[0]).map((row) => {
-    const [timestamp, studentName, studentClass, examName, part, score, total] = row;
+    const [startTime, studentName, studentClass, examName, part, score, total, timestamp, durationMinutes] = row;
     return {
-      timestamp,
+      startTime,
       studentName,
       studentClass,
       examName,
       part,
       score: Number(score),
       total: Number(total),
+      timestamp,
+      durationMinutes: Number(durationMinutes),
     };
   });
 }
@@ -132,7 +134,7 @@ function renderSubmissionList() {
     row.className = 'word-row';
 
     const info = document.createElement('span');
-    info.textContent = `${sub.studentName} (${sub.studentClass}) — ${sub.examName} [${sub.part}] — ${sub.score}/${sub.total} — ${formatTime(sub.timestamp)}`;
+    info.textContent = `${sub.studentName} (${sub.studentClass}) — ${sub.examName} [${sub.part}] — ${sub.score}/${sub.total} — ${formatTime(sub.timestamp)} (${sub.durationMinutes} phút)`;
 
     row.append(info);
     submissionList.appendChild(row);
