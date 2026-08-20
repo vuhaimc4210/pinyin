@@ -361,12 +361,12 @@ const XLSX_HEADERS = ['Thời gian', 'Tên', 'Lớp', 'Tên bài', 'Phần', 'S�
 
 // new Date().toISOString() trả về giờ UTC (hậu tố "Z") — Google Sheet chỉ
 // lưu nguyên chuỗi, không tự quy đổi múi giờ, nên phải tự cộng +7 (giờ Việt
-// Nam, không có giờ mùa hè) rồi format thành "YYYY-MM-DD HH-mm-ss".
+// Nam, không có giờ mùa hè) rồi format thành "YYYY-MM-DD HH:mm:ss".
 function vnTimestamp() {
   const pad = (n) => String(n).padStart(2, '0');
   const vn = new Date(Date.now() + 7 * 60 * 60 * 1000);
   const date = `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}`;
-  const time = `${pad(vn.getUTCHours())}-${pad(vn.getUTCMinutes())}-${pad(vn.getUTCSeconds())}`;
+  const time = `${pad(vn.getUTCHours())}:${pad(vn.getUTCMinutes())}:${pad(vn.getUTCSeconds())}`;
   return `${date} ${time}`;
 }
 
